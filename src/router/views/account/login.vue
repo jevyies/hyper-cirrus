@@ -167,7 +167,7 @@ export default {
               <div class="col-7">
                 <div class="text-primary p-4">
                   <h5 class="text-primary">Welcome Back !</h5>
-                  <p>Sign in to continue to GIAMS.</p>
+                  <p>Sign in to continue to Hyper Cirrus.</p>
                 </div>
               </div>
               <div class="col-5 align-self-end">
@@ -295,7 +295,7 @@ export default {
               >Contact Admin</router-link
             > -->
           </p>
-          <p>© {{ new Date().getFullYear() }} USTP | GIAMS</p>
+          <p>© {{ new Date().getFullYear() }} Hyper Cirrus</p>
         </div>
         <!-- end row -->
       </div>
