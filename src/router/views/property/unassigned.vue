@@ -1,0 +1,1635 @@
+<script>
+import Layout from "../../layouts/main";
+import PageHeader from "@/components/page-header";
+import { cloneDeep, groupBy } from "lodash";
+import { required } from "vuelidate/lib/validators";
+import createNumberMask from "text-mask-addons/dist/createNumberMask";
+import Employee from "@/components/modals/employee.vue";
+import Location from "@/components/modals/property-location.vue";
+import UploadPopover from "@/components/widgets/upload-popover.vue";
+
+export default {
+  page: {
+    title: "Un-assigned",
+  },
+  components: {
+    Layout,
+    PageHeader,
+    Employee,
+    Location,
+    UploadPopover,
+  },
+  data() {
+    return {
+      title: "Un-assigned",
+      submitted: false,
+      items: [
+        {
+          text: "Dashboards",
+          href: "/",
+        },
+        {
+          text: "Un-assigned",
+          active: true,
+        },
+      ],
+      currencyMask: createNumberMask({
+        prefix: "",
+        allowDecimal: true,
+      }),
+      quantityMask: createNumberMask({
+        prefix: "",
+        includeThousandsSeparator: false,
+      }),
+      tableData: [],
+      modalTitle: "",
+      totalRows: 1,
+      currentPage: 1,
+      perPage: 10,
+      pageOptions: [10, 25, 50, 100],
+      filter: null,
+      filterOn: [],
+      sortBy: "poNumber",
+      sortDesc: false,
+      fields: [
+        // {
+        //   key: "displayDetails",
+        //   sortable: false,
+        //   label: " ",
+        //   thStyle: { width: "30px" },
+        // },
+        {
+          key: "poNumber",
+          sortable: true,
+          label: "PO Number",
+        },
+        {
+          key: "supplier",
+          sortable: true,
+          label: "Supplier",
+        },
+        {
+          key: "actions",
+          thStyle: { width: "150px" },
+        },
+      ],
+      propertyFields: [
+        {
+          key: "Name",
+          sortable: true,
+        },
+      ],
+      form: {
+        propertyId: "",
+        employeeId: "",
+        deliveryUnitId: "",
+        propertyLocationId: "",
+        assignNotes: "",
+        assignmentType: "",
+      },
+      indexSelected: -1,
+      tableBusy: false,
+      employeeName: "",
+      location: "",
+      uploadOptions: {
+        type: "Property",
+        placement: "lefttop",
+        folder: "Property",
+      },
+    };
+  },
+  validations: {
+    form: {
+      employeeId: { required },
+      propertyLocationId: { required },
+      assignNotes: { required },
+      assignmentType: { required },
+    },
+  },
+  computed: {
+    rows() {
+      return this.tableData.length;
+    },
+    grouped() {
+      var grouped = groupBy(this.tableData, "poNumber");
+      var array = [];
+      for (const key in grouped) {
+        array.push({
+          poNumber: key,
+          details: grouped[key],
+          showDetails: false,
+          rotateChevy: false,
+        });
+      }
+      return array;
+    },
+  },
+  created() {
+    this.totalRows = this.items.length;
+    this.tableBusy = true;
+    this.$store
+      .dispatch("property/GetPropertyAvailable")
+      .then((res) => {
+        this.tableBusy = false;
+        res.data.forEach((item) => {
+          item.currentPage = 1;
+          item.filter = null;
+          item.filterOn = [];
+          item.tableBusy = false;
+          item.visible = false;
+          item.itemVisible = false;
+          item.assignmentHistory = [];
+          item.assignVisible = false;
+          item.inspectionVisible = false;
+          item.attachmentVisible = false;
+          item.addDocu = false;
+          item.attachmentLoading = false;
+          item.fileSearch = "";
+        });
+        this.tableData = res.data;
+      })
+      .catch(() => {
+        this.tableBusy = false;
+        this.showToast(
+          "Something went wrong getting un-assigned list!",
+          "error"
+        );
+      });
+  },
+  methods: {
+    onFiltered(filteredItems) {
+      this.totalRows = filteredItems.length;
+      this.currentPage = 1;
+    },
+    propertyRows(props) {
+      return props.length;
+    },
+    onAdd() {
+      this.submitted = true;
+      this.$v.$touch();
+      if (this.$v.$invalid) {
+        return;
+      } else {
+        this.form.dateAssigned = this.setDate(this.form.dateAssigned);
+        this.$store
+          .dispatch("propertyassignment/AddPropertyAssignment", this.form)
+          .then((res) => {
+            if (res.data.error) {
+              return this.showToast(res.data.errorMessage, "error");
+            }
+            this.tableData.splice(this.indexSelected, 1);
+            this.showToast("Successfully created!", "success");
+            this.onReset();
+            this.hideModal();
+          })
+          .catch((err) => {
+            this.showToast("Something went wrong assigning property!", "error");
+          });
+        this.submitted = false;
+      }
+    },
+    onReset() {
+      this.form = {
+        employeeId: "",
+        deliveryUnitId: "",
+        propertyLocationId: "",
+        assignNotes: "",
+        assignmentType: "",
+        dateAssigned: "",
+      };
+      this.employeeName = "";
+      this.location = "";
+    },
+    assignProperty(props) {
+      this.form.propertyId = props.id;
+      this.form.dateAssigned = new Date();
+      this.indexSelected = this.tableData.indexOf(props);
+      this.modalTitle = "Assign Officer";
+      this.$bvModal.show("modal-standard");
+    },
+    hideModal() {
+      this.$bvModal.hide("modal-standard");
+    },
+    disposeItem(props) {
+      var index = this.tableData.indexOf(props);
+      this.$swal({
+        title: "Are you sure?",
+        text: "You are about to set this item for disposal.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#5c636a",
+        confirmButtonText: "Yes, dispose it!",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.$store
+            .dispatch("property/DisposeProperty", props.id)
+            .then((res) => {
+              this.tableData.splice(index, 1);
+              this.showToast("Successfully disposed", "success");
+            })
+            .catch((err) => {
+              this.showToast("Cannot be disposed!", "error");
+            });
+        }
+      });
+    },
+    getEmployee() {
+      this.$bvModal.show("employee-modal");
+    },
+    dropEmployee(data) {
+      var firstname = data.firstName;
+      var lastname = data.lastName;
+      this.form.employeeId = data.id;
+      this.form.position = data.position;
+      this.form.deliveryUnitId = data.department.deliveryUnitId;
+      this.employeeName = firstname.concat(" ", lastname);
+    },
+    getLocation() {
+      // this.$refs.property-location.getData();
+      this.$bvModal.show("location-modal");
+    },
+    dropLocation(data) {
+      this.form.propertyLocationId = data.id;
+      this.location = data.location;
+    },
+    showDtls(row) {
+      row.item.rotateChevy = !row.item.rotateChevy;
+      if (row.item.showDetails) {
+        row.item.showDetails = !row.item.showDetails;
+        setTimeout(() => {
+          row.toggleDetails();
+        }, 600);
+      } else {
+        row.toggleDetails();
+        setTimeout(() => {
+          row.item.showDetails = !row.item.showDetails;
+        }, 50);
+      }
+    },
+    setDate(date) {
+      const nDate = new Date(
+        new Date(date).getTime() -
+          new Date(date).getTimezoneOffset() * 60 * 1000
+      );
+      return nDate.toISOString();
+    },
+    setAmount(amount) {
+      return Intl.NumberFormat("ja-JP", {
+        currency: "PHP",
+        style: "currency",
+      }).format(amount);
+    },
+    getAssignments(row) {
+      row.assignVisible = !row.assignVisible;
+      if (row.assignVisible) {
+        row.assignmentHistory = [];
+        this.$store
+          .dispatch("propertyassignment/GetPropertyAssignment", row.id)
+          .then((res) => {
+            row.assignmentHistory = res.data;
+          })
+          .catch(() => {
+            this.showToast(
+              "Something went wrong! - getting assignments",
+              "error"
+            );
+          });
+      }
+    },
+    uploadDocument(response, id) {
+      var index = this.tableData.findIndex((x) => x.id == id);
+      this.tableData[index].propertyFiles.push(response);
+    },
+    openDocument(x) {
+      window.open(
+        `${this.$store.state.data.rootFileDirectory}${x.folder}/${x.fileName}`
+      );
+    },
+    searchDocu(row) {
+      let data = row.propertyFiles;
+      if (row.fileSearch.trim() != "" && row.fileSearch) {
+        data = data.filter((item) => {
+          return item.description
+            .toUpperCase()
+            .includes(row.fileSearch.toUpperCase());
+        });
+      }
+      return data;
+    },
+    getAttachments(row) {
+      row.attachmentVisible = !row.attachmentVisible;
+      if (row.attachmentVisible) {
+        row.propertyFiles = [];
+        row.fileSearch = "";
+        row.attachmentLoading = true;
+        this.$store
+          .dispatch("filemanager/GetFiles", {
+            id: row.id,
+            type: this.uploadOptions.type,
+          })
+          .then((res) => {
+            row.attachmentLoading = false;
+            row.propertyFiles = res.data;
+          })
+          .catch(() => {
+            row.attachmentLoading = false;
+            this.showToast(
+              "Something went wrong! - getting documents",
+              "error"
+            );
+          });
+      }
+    },
+    removeFile(id, parentId, type) {
+      this.$swal({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#5c636a",
+        confirmButtonText: "Yes, remove it!",
+      }).then((result) => {
+        if (result.value) {
+          this.$store
+            .dispatch("filemanager/DeleteFile", id)
+            .then((res) => {
+              if (res.data.error) {
+                return this.showToast(res.data.errorMessage, "error");
+              }
+              let index = this.tableData.findIndex(
+                (item) => item.id == parentId
+              );
+              let yIndex = this.tableData[index].propertyFiles.findIndex(
+                (item) => item.id == id
+              );
+              this.tableData[index].propertyFiles.splice(yIndex, 1);
+              this.showToast("Successfully removed!", "success");
+            })
+            .catch(() => {
+              this.showToast("Cannot be deleted!", "error");
+            });
+        }
+      });
+    },
+  },
+};
+</script>
+
+<template>
+  <Layout>
+    <PageHeader :title="title" :items="items" />
+    <div class="row">
+      <div class="col-12">
+        <div class="card border">
+          <div class="card-body">
+            <b-modal
+              id="modal-standard"
+              :title="modalTitle"
+              size="md"
+              title-class="font-18"
+              hide-footer
+            >
+              <form
+                @submit.prevent="onAdd"
+                class="needs-validation"
+                ref="fcForm"
+              >
+                <div class="mb-3">
+                  <label for="employee">Employee</label>
+                  <b-input-group>
+                    <template #append>
+                      <b-button @click="getEmployee" variant="outline-info"
+                        ><i class="mdi mdi-clipboard-text-search-outline"></i
+                      ></b-button>
+                    </template>
+                    <input
+                      autocomplete="off"
+                      type="text"
+                      disabled
+                      placeholder="Search Employee..."
+                      class="form-control"
+                      :class="{
+                        'is-invalid': submitted && $v.form.employeeId.$error,
+                      }"
+                      v-model="employeeName"
+                    />
+                  </b-input-group>
+                  <div
+                    v-if="submitted && $v.form.employeeId.$error"
+                    class="invalid-feedback"
+                  >
+                    <span v-if="!$v.form.employeeId.required"
+                      >This value is required.</span
+                    >
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="employee">Location</label>
+                  <b-input-group>
+                    <template #append>
+                      <b-button @click="getLocation" variant="outline-info"
+                        ><i class="mdi mdi-clipboard-text-search-outline"></i
+                      ></b-button>
+                    </template>
+                    <input
+                      autocomplete="off"
+                      type="text"
+                      disabled
+                      placeholder="Search Location..."
+                      class="form-control"
+                      :class="{
+                        'is-invalid':
+                          submitted && $v.form.propertyLocationId.$error,
+                      }"
+                      v-model="location"
+                    />
+                  </b-input-group>
+                  <div
+                    v-if="submitted && $v.form.propertyLocationId.$error"
+                    class="invalid-feedback"
+                  >
+                    <span v-if="!$v.form.propertyLocationId.required"
+                      >This value is required.</span
+                    >
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="assignmentType">Assignment Type </label>
+                  <b-form-select
+                    class="form-select"
+                    :class="{
+                      'is-invalid': submitted && $v.form.assignmentType.$error,
+                    }"
+                    v-model="form.assignmentType"
+                  >
+                    <b-form-select-option value="" disabled
+                      >Select Type...</b-form-select-option
+                    >
+                    <b-form-select-option value="New">New</b-form-select-option>
+                    <b-form-select-option value="Transfer"
+                      >Transfer</b-form-select-option
+                    >
+                    <b-form-select-option value="Borrowed"
+                      >Borrowed</b-form-select-option
+                    >
+                  </b-form-select>
+                  <div
+                    v-if="submitted && $v.form.assignmentType.$error"
+                    class="invalid-feedback"
+                  >
+                    <span v-if="!$v.form.assignmentType.required"
+                      >This value is required.</span
+                    >
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="assignNotes">Notes </label>
+                  <textarea
+                    id="assignNotes"
+                    rows="2"
+                    v-model="form.assignNotes"
+                    placeholder="Enter Notes..."
+                    class="form-control"
+                    :class="{
+                      'is-invalid': submitted && $v.form.assignNotes.$error,
+                    }"
+                    autocomplete="off"
+                  ></textarea>
+                  <div
+                    v-if="submitted && $v.form.assignNotes.$error"
+                    class="invalid-feedback"
+                  >
+                    <span v-if="!$v.form.assignNotes.required"
+                      >This value is required.</span
+                    >
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">
+                    Save changes
+                  </button>
+                  <!-- <button
+                      type="button"
+                      class="btn btn-link"
+                      @click="hideModal"
+                    >
+                      Close
+                    </button> -->
+                </div>
+              </form>
+            </b-modal>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center h-100">
+                  <h5 class="mb-0">List of Un-Assigned Properties</h5>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex float-end">
+                  <div id="tickets-table_filter" class="dataTables_filter me-1">
+                    <label class="d-inline-flex align-items-center">
+                      <b-form-input
+                        autocomplete="off"
+                        v-model="filter"
+                        type="search"
+                        placeholder="Search Property..."
+                        class="form-control"
+                      ></b-form-input>
+                    </label>
+                  </div>
+                  <div id="tickets-table_length" class="dataTables_length">
+                    <label class="d-inline-flex align-items-center mb-0">
+                      <b-form-select
+                        class="form-select"
+                        v-model="perPage"
+                        size="sm"
+                        :options="pageOptions"
+                      >
+                      </b-form-select>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive mb-0 mt-2">
+              <b-table
+                class="datatables target-table"
+                :items="grouped"
+                :fields="fields"
+                responsive="sm"
+                :per-page="perPage"
+                :current-page="currentPage"
+                :sort-by.sync="sortBy"
+                :sort-desc.sync="sortDesc"
+                :filter="filter"
+                :filter-included-fields="filterOn"
+                :busy="tableBusy"
+                @filtered="onFiltered"
+                bordered
+                outlined
+                striped
+                show-empty
+              >
+                <template #empty="scope">
+                  <div class="text-center">
+                    {{ scope.emptyText }}
+                  </div>
+                </template>
+                <template #table-busy>
+                  <div class="d-flex justify-content-center align-items-center">
+                    <div class="preloader-component me-2">
+                      <div class="status">
+                        <div class="spinner-chase w-20px h-20px">
+                          <div class="chase-dot"></div>
+                          <div class="chase-dot"></div>
+                          <div class="chase-dot"></div>
+                          <div class="chase-dot"></div>
+                          <div class="chase-dot"></div>
+                          <div class="chase-dot"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <strong>Loading...</strong>
+                  </div>
+                </template>
+                <template #cell(poNumber)="row">
+                  <b class="text-muted">{{ row.value }}</b>
+                </template>
+                <template #cell(supplier)="row">
+                  {{ row.item.details[0].supplier }}
+                </template>
+                <template #cell(actions)="row">
+                  <!-- <div class="float-end">
+                    <b-dropdown
+                      id="dropdown-dropleft"
+                      right
+                      variant="link"
+                      toggle-class="text-decoration-none"
+                      menu-class="dropdown-menu-end"
+                      no-caret
+                    >
+                      <template #button-content>
+                        <i class="fas fa-ellipsis-v"></i>
+                      </template>
+                      <b-dropdown-item @click="showDtls(row)"
+                        ><i class="bx bxs-book-content font-size-18 me-1"></i
+                        >{{
+                          row.detailsShowing ? "Hide" : "Show"
+                        }}
+                        Details</b-dropdown-item
+                      >
+                    </b-dropdown>
+                  </div> -->
+
+                  <div
+                    class="
+                      d-flex
+                      align-items-center
+                      justify-content-end
+                      cursor-pointer
+                    "
+                    @click="showDtls(row)"
+                  >
+                    <small v-if="!row.item.showDetails"
+                      >Click here to expand</small
+                    >
+                    <i
+                      class="bx bx-chevron-right rotate font-size-16"
+                      :class="{
+                        'rotate-90': row.item.rotateChevy,
+                      }"
+                    ></i>
+                  </div>
+                </template>
+                <template #cell(displayDetails)="row">
+                  <div
+                    class="d-flex align-items-center justify-content-center"
+                    @click="showDtls(row)"
+                  >
+                    <i
+                      class="
+                        bx bx-chevron-right
+                        rotate
+                        font-size-16
+                        cursor-pointer
+                      "
+                      :class="{
+                        'rotate-90': row.item.rotateChevy,
+                      }"
+                    ></i>
+                  </div>
+                </template>
+                <template #row-details="row">
+                  <transition name="max-height">
+                    <b-card
+                      no-body
+                      class="
+                        p-3
+                        shadow-none
+                        mb-0
+                        border-5 border-top-0 border-start-0 border-end-0
+                      "
+                      v-if="row.item.showDetails"
+                    >
+                      <div
+                        id="tickets-table_filter"
+                        class="dataTables_filter text-md-end"
+                      >
+                        <label class="d-inline-flex align-items-center">
+                          Search:
+                          <b-form-input
+                            autocomplete="off"
+                            v-model="row.item.filter"
+                            type="search"
+                            placeholder="Search..."
+                            class="form-control form-control-sm ms-2"
+                          ></b-form-input>
+                        </label>
+                      </div>
+                      <div class="table-responsive mb-0">
+                        <b-table
+                          class="datatables target-table"
+                          thead-class="d-none"
+                          :items="row.item.details"
+                          :fields="propertyFields"
+                          responsive="sm"
+                          :per-page="5"
+                          :current-page="row.item.currentPage"
+                          sort-by="name"
+                          :sort-desc="false"
+                          :filter="row.item.filter"
+                          :filter-included-fields="row.item.filterOn"
+                          :busy="row.item.tableBusy"
+                          @filtered="row.item.currentPage = 1"
+                          show-empty
+                        >
+                          <template #empty="scope">
+                            <div class="text-center">
+                              {{ scope.emptyText }}
+                            </div>
+                          </template>
+                          <template #table-busy>
+                            <div
+                              class="
+                                d-flex
+                                justify-content-center
+                                align-items-center
+                              "
+                            >
+                              <div class="preloader-component me-2">
+                                <div class="status">
+                                  <div class="spinner-chase w-20px h-20px">
+                                    <div class="chase-dot"></div>
+                                    <div class="chase-dot"></div>
+                                    <div class="chase-dot"></div>
+                                    <div class="chase-dot"></div>
+                                    <div class="chase-dot"></div>
+                                    <div class="chase-dot"></div>
+                                  </div>
+                                </div>
+                              </div>
+                              <strong>Loading...</strong>
+                            </div>
+                          </template>
+                          <template #cell(name)="propertyRow">
+                            <b-card-header
+                              header-tag="header"
+                              role="tab"
+                              class="border"
+                            >
+                              <div
+                                class="
+                                  d-flex
+                                  justify-content-between
+                                  align-items-center
+                                "
+                              >
+                                <div class="d-flex align-items-center">
+                                  <div
+                                    style="min-width: 30px"
+                                    class="
+                                      bg-success bg-gradient
+                                      text-center
+                                      me-2
+                                      py-1
+                                      position-relative
+                                    "
+                                  >
+                                    <h3 class="mb-0 position-relative">
+                                      {{ propertyRow.index + 1 }}
+                                    </h3>
+                                  </div>
+                                  <div class="text-muted">
+                                    <h5 class="mb-0">
+                                      {{ propertyRow.item.name }}
+                                    </h5>
+                                    <div>
+                                      <small class="d-flex align-items-center"
+                                        >{{
+                                          setAmount(propertyRow.item.amount)
+                                        }}
+                                        |
+                                        <a
+                                          href="javascript: void(0);"
+                                          class="
+                                            text-success
+                                            d-flex
+                                            align-items-center
+                                            ms-1
+                                          "
+                                          @click="
+                                            propertyRow.item.visible =
+                                              !propertyRow.item.visible
+                                          "
+                                        >
+                                          {{
+                                            propertyRow.item.visible
+                                              ? "Hide"
+                                              : "Show"
+                                          }}
+                                          Details
+                                          <i
+                                            class="
+                                              bx bx-chevron-right
+                                              rotate
+                                              font-size-14
+                                            "
+                                            :class="{
+                                              'rotate-90':
+                                                propertyRow.item.visible,
+                                            }"
+                                          ></i>
+                                        </a>
+                                      </small>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div
+                                  class="float-end d-flex align-items-center"
+                                >
+                                  <b-dropdown
+                                    id="dropdown-dropleft"
+                                    right
+                                    variant="link"
+                                    toggle-class="text-decoration-none"
+                                    menu-class="dropdown-menu-end"
+                                    no-caret
+                                  >
+                                    <template #button-content>
+                                      <i class="fas fa-ellipsis-v"></i>
+                                    </template>
+                                    <b-dropdown-item
+                                      @click="assignProperty(propertyRow.item)"
+                                      variant="success"
+                                      ><i
+                                        class="
+                                          bx bx-list-check
+                                          font-size-18
+                                          me-1
+                                        "
+                                      ></i
+                                      >Assign User</b-dropdown-item
+                                    >
+                                    <!-- <b-dropdown-item
+                                    @click="disposeItem(propertyRow.item)"
+                                    variant="danger"
+                                    ><i
+                                      class="
+                                        mdi mdi-trash-can
+                                        font-size-18
+                                        me-1
+                                      "
+                                    ></i
+                                    >Dispose</b-dropdown-item
+                                  > -->
+                                  </b-dropdown>
+                                </div>
+                              </div>
+                            </b-card-header>
+                            <b-collapse
+                              :visible="propertyRow.item.visible"
+                              role="tabpanel"
+                            >
+                              <!-- Details -->
+                              <b-card-body class="border">
+                                <div
+                                  class="
+                                    d-flex
+                                    align-items-center
+                                    justify-content-between
+                                    cursor-pointer
+                                  "
+                                  @click="
+                                    propertyRow.item.itemVisible =
+                                      !propertyRow.item.itemVisible
+                                  "
+                                >
+                                  <h6 class="mb-0">
+                                    <i class="bx bx-menu-alt-right"></i>
+                                    Property Details
+                                  </h6>
+                                  <h5 class="mb-0">
+                                    <i
+                                      class="bx bx-chevron-right rotate"
+                                      :class="{
+                                        'rotate-90':
+                                          propertyRow.item.itemVisible,
+                                      }"
+                                    ></i>
+                                  </h5>
+                                </div>
+                              </b-card-body>
+                              <b-collapse
+                                :visible="propertyRow.item.itemVisible"
+                                role="tabpanel"
+                              >
+                                <b-card-body class="border">
+                                  <b-row>
+                                    <b-col sm="6">
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Property Name:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.name
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Property Specification:</b>
+                                        </b-col>
+                                        <b-col>{{
+                                          propertyRow.item.specification
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Color:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.color
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Dimension Description:</b>
+                                        </b-col>
+                                        <b-col>{{
+                                          propertyRow.item.dimensionDescription
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Material Used:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.materialUsed
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Package Description:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.packageDescription
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Property Number:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.propertyNumber
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Serial Number:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.serialNumber
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right"
+                                          ><b>Date Acquired:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          formatDate(
+                                            new Date(
+                                              propertyRow.item.dateAcquired
+                                            )
+                                          )
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Amount:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          setAmount(propertyRow.item.amount)
+                                        }}</b-col>
+                                      </b-row>
+                                    </b-col>
+                                    <b-col sm="6" class="border-start border-3">
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right"
+                                          ><b>Life Span in Yrs:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.lifespanInYears
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Yearly Depreciation:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.yearlyDepreciation
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Salvage Value:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.salvageValue
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right"
+                                          ><b>Item Category:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.itemCategory.name
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Supplier:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.supplier
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right"
+                                          ><b>PO Number:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.poNumber
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Notes:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.note
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Brand:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.brand
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Property Condition:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.condition
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Model:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.model
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right"
+                                          ><b>Fund Cluster:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.fundCluster
+                                        }}</b-col>
+                                      </b-row>
+                                      <b-row class="mb-2">
+                                        <b-col sm="4" class="text-right">
+                                          <b>Unit:</b></b-col
+                                        >
+                                        <b-col>{{
+                                          propertyRow.item.unit
+                                        }}</b-col>
+                                      </b-row>
+                                    </b-col>
+                                  </b-row>
+                                </b-card-body>
+                              </b-collapse>
+                              <!-- Assignment History -->
+                              <b-card-body class="border">
+                                <div
+                                  class="
+                                    d-flex
+                                    align-items-center
+                                    justify-content-between
+                                    cursor-pointer
+                                  "
+                                  @click="getAssignments(propertyRow.item)"
+                                >
+                                  <h6 class="mb-0">
+                                    <i class="bx bx-user"></i>
+                                    Assignment History
+                                  </h6>
+                                  <h5 class="mb-0">
+                                    <i
+                                      class="bx bx-chevron-right rotate"
+                                      :class="{
+                                        'rotate-90':
+                                          propertyRow.item.assignVisible,
+                                      }"
+                                    ></i>
+                                  </h5>
+                                </div>
+                              </b-card-body>
+                              <b-collapse
+                                :visible="propertyRow.item.assignVisible"
+                                role="tabpanel"
+                              >
+                                <b-card-body
+                                  v-if="
+                                    propertyRow.item.assignmentHistory.length ==
+                                    0
+                                  "
+                                  class="border"
+                                >
+                                  <div
+                                    class="
+                                      d-flex
+                                      align-items-center
+                                      justify-content-between
+                                      mb-3
+                                    "
+                                  >
+                                    <p class="mb-0">
+                                      <i>No prior history</i>
+                                    </p>
+                                  </div>
+                                </b-card-body>
+
+                                <b-card-body
+                                  class="text-muted border"
+                                  v-for="y in propertyRow.item
+                                    .assignmentHistory"
+                                  :key="y.id"
+                                >
+                                  <b class="font-size-16">
+                                    {{
+                                      y.employee.firstName
+                                        .charAt(0)
+                                        .toUpperCase() +
+                                      y.employee.firstName.slice(1)
+                                    }}
+                                    {{
+                                      y.employee.middleName
+                                        ? `${y.employee.middleName
+                                            .charAt(0)
+                                            .toUpperCase()}.`
+                                        : ""
+                                    }}
+                                    {{
+                                      y.employee.lastName
+                                        .charAt(0)
+                                        .toUpperCase() +
+                                      y.employee.lastName.slice(1)
+                                    }}
+                                  </b>
+                                  <div class="font-size-12 mb-1">
+                                    Position:
+                                    <b class="font-size-14">{{
+                                      y.employee.position
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Assignment Type:
+                                    <b class="font-size-14">{{
+                                      y.assignmentType
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Date Assigned:
+                                    <b class="font-size-14">{{
+                                      formatDate(new Date(y.dateAssigned))
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Date Returned:
+                                    <b
+                                      v-if="
+                                        y.dateReturned == '0001-01-01T00:00:00'
+                                      "
+                                      class="font-size-14"
+                                    >
+                                      N/A
+                                    </b>
+                                    <b v-else class="font-size-14">{{
+                                      formatDate(new Date(y.dateReturned))
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Location:
+                                    <b class="font-size-14">{{
+                                      y.propertyLocation
+                                    }}</b>
+                                  </div>
+                                </b-card-body>
+                              </b-collapse>
+                              <!-- Inspection History -->
+                              <b-card-body class="border">
+                                <div
+                                  class="
+                                    d-flex
+                                    align-items-center
+                                    justify-content-between
+                                    cursor-pointer
+                                  "
+                                  @click="
+                                    propertyRow.item.inspectionVisible =
+                                      !propertyRow.item.inspectionVisible
+                                  "
+                                >
+                                  <h6 class="mb-0">
+                                    <i class="bx bx-show"></i>
+                                    Inspection History
+                                  </h6>
+                                  <h5 class="mb-0">
+                                    <i
+                                      class="bx bx-chevron-right rotate"
+                                      :class="{
+                                        'rotate-90':
+                                          propertyRow.item.inspectionVisible,
+                                      }"
+                                    ></i>
+                                  </h5>
+                                </div>
+                              </b-card-body>
+                              <b-collapse
+                                :visible="propertyRow.item.inspectionVisible"
+                                role="tabpanel"
+                              >
+                                <b-card-body
+                                  v-if="
+                                    propertyRow.item.propertyInspections
+                                      .length == 0
+                                  "
+                                  class="border"
+                                >
+                                  <div
+                                    class="
+                                      d-flex
+                                      align-items-center
+                                      justify-content-between
+                                      mb-3
+                                    "
+                                  >
+                                    <p class="mb-0">
+                                      <i>No prior history</i>
+                                    </p>
+                                  </div>
+                                </b-card-body>
+
+                                <b-card-body
+                                  class="text-muted border"
+                                  v-for="y in propertyRow.item
+                                    .propertyInspections"
+                                  :key="y.id"
+                                >
+                                  <b class="font-size-16">
+                                    {{
+                                      formatDateWithTime(
+                                        new Date(y.inspectionDateTime)
+                                      )
+                                    }}
+                                  </b>
+                                  <div class="font-size-12 mb-1">
+                                    Property Status:
+                                    <b class="font-size-14">{{
+                                      y.propertyStatus
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Assessed Value:
+                                    <b class="font-size-14">{{
+                                      y.assessedValue
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Inspection Status:
+                                    <b class="font-size-14">{{
+                                      y.inspectionStatus
+                                    }}</b>
+                                  </div>
+                                  <div class="font-size-12 mb-1">
+                                    Inspected By:
+                                    <b v-if="y.employee" class="font-size-14">
+                                      {{
+                                        y.employee.firstName
+                                          .charAt(0)
+                                          .toUpperCase() +
+                                        y.employee.firstName.slice(1)
+                                      }}
+                                      {{
+                                        y.employee.middleName
+                                          ? `${y.employee.middleName
+                                              .charAt(0)
+                                              .toUpperCase()}.`
+                                          : ""
+                                      }}
+                                      {{
+                                        y.employee.lastName
+                                          .charAt(0)
+                                          .toUpperCase() +
+                                        y.employee.lastName.slice(1)
+                                      }}</b
+                                    >
+                                    <b v-else class="font-size-14">n/a</b>
+                                  </div>
+                                  <div class="font-size-16 mb-1">
+                                    <span
+                                      v-if="y.status == 'PENDING'"
+                                      class="
+                                        badge
+                                        bg-warning bg-soft
+                                        text-warning
+                                      "
+                                      ><b>{{ y.status }}</b></span
+                                    >
+                                    <span
+                                      v-if="y.status == 'POSTED'"
+                                      class="badge bg-success"
+                                      ><b>{{ y.status }}</b></span
+                                    >
+                                  </div>
+                                </b-card-body>
+                              </b-collapse>
+                              <!-- Attachments -->
+                              <b-card-body class="border">
+                                <div
+                                  class="
+                                    d-flex
+                                    align-items-center
+                                    justify-content-between
+                                    cursor-pointer
+                                  "
+                                  @click="getAttachments(propertyRow.item)"
+                                >
+                                  <h6 class="mb-0">
+                                    <i
+                                      class="bx bx-paperclip rotate rotate-90"
+                                    ></i>
+                                    Attachments
+                                  </h6>
+                                  <h5 class="mb-0">
+                                    <i
+                                      class="bx bx-chevron-right rotate"
+                                      :class="{
+                                        'rotate-90':
+                                          propertyRow.item.attachmentVisible,
+                                      }"
+                                    ></i>
+                                  </h5>
+                                </div>
+                              </b-card-body>
+                              <b-collapse
+                                :visible="propertyRow.item.attachmentVisible"
+                                role="tabpanel"
+                              >
+                                <b-card-body class="border">
+                                  <div
+                                    class="
+                                      d-flex
+                                      align-items-center
+                                      justify-content-between
+                                      mb-3
+                                    "
+                                  >
+                                    <div class="d-flex">
+                                      <p
+                                        class="mb-0"
+                                        v-if="
+                                          propertyRow.item.propertyFiles
+                                            .length == 0
+                                        "
+                                      >
+                                        <i>No documents found</i>
+                                      </p>
+                                      <input
+                                        v-if="
+                                          propertyRow.item.propertyFiles
+                                            .length > 0
+                                        "
+                                        type="search"
+                                        class="form-control"
+                                        v-model="propertyRow.item.fileSearch"
+                                        placeholder="Search Documents..."
+                                      />
+                                    </div>
+                                    <div class="">
+                                      <!-- <button
+                                      type="button"
+                                      :id="`posted-document${propertyRow.item.id}`"
+                                      @click="propertyRow.item.addDocu = true"
+                                      class="
+                                        btn btn-sm btn-info
+                                        mb-2
+                                        me-2
+                                        d-flex
+                                        align-items-center
+                                      "
+                                    >
+                                      <i class="bx bx-plus fs-6"></i>Upload
+                                      Documents
+                                    </button> -->
+                                      <a
+                                        href="javascript:void(0);"
+                                        class="
+                                          text-primary
+                                          border-primary border
+                                          p-2
+                                        "
+                                        :id="`posted-document${propertyRow.item.id}`"
+                                        @click="propertyRow.item.addDocu = true"
+                                        ><i class="bx bx-plus"></i>Upload
+                                        Documents</a
+                                      >
+                                      <upload-popover
+                                        :option="uploadOptions"
+                                        :sourceId="propertyRow.item.id"
+                                        @uploaded="
+                                          uploadDocument(
+                                            $event,
+                                            propertyRow.item.id
+                                          )
+                                        "
+                                        :showPV="propertyRow.item.addDocu"
+                                        @closePopover="
+                                          propertyRow.item.addDocu = false
+                                        "
+                                        :dzId="`dropzone-posted${propertyRow.item.id}`"
+                                        :pvId="`posted-document${propertyRow.item.id}`"
+                                      ></upload-popover>
+                                    </div>
+                                  </div>
+                                  <div class="mt-2">
+                                    <b-row>
+                                      <b-col
+                                        sm="3"
+                                        v-for="(y, index) in searchDocu(
+                                          propertyRow.item
+                                        )"
+                                        :key="y.id"
+                                        class="mb-2"
+                                      >
+                                        <div
+                                          class="
+                                            position-relative
+                                            cursor-pointer
+                                          "
+                                          :style="`z-index: ${
+                                            propertyRow.item.propertyFiles
+                                              .length - index
+                                          }`"
+                                        >
+                                          <div class="border p-3">
+                                            <div>
+                                              <div class="float-end ms-2">
+                                                <b-dropdown
+                                                  id="dropdown-dropleft"
+                                                  right
+                                                  variant="link"
+                                                  toggle-class="text-decoration-none text-dark font-size-16 pt-0"
+                                                  menu-class="dropdown-menu-end"
+                                                  no-caret
+                                                >
+                                                  <template #button-content>
+                                                    <i
+                                                      class="
+                                                        mdi mdi-dots-horizontal
+                                                      "
+                                                    ></i>
+                                                  </template>
+                                                  <b-dropdown-item
+                                                    @click="openDocument(y)"
+                                                    ><i
+                                                      class="
+                                                        bx bx-link-external
+                                                        me-1
+                                                      "
+                                                    ></i
+                                                    >Open</b-dropdown-item
+                                                  >
+                                                  <b-dropdown-item
+                                                    variant="danger"
+                                                    @click="
+                                                      removeFile(
+                                                        y.id,
+                                                        propertyRow.item.id
+                                                      )
+                                                    "
+                                                    ><i
+                                                      class="bx bx-trash me-1"
+                                                    ></i
+                                                    >Remove</b-dropdown-item
+                                                  >
+                                                </b-dropdown>
+                                              </div>
+                                              <div
+                                                class="avatar-xs me-3 mb-2"
+                                                @click="openDocument(y)"
+                                              >
+                                                <div
+                                                  class="
+                                                    avatar-title
+                                                    bg-transparent
+                                                    rounded
+                                                  "
+                                                >
+                                                  <i
+                                                    v-if="
+                                                      y.fileType.includes(
+                                                        'image'
+                                                      )
+                                                    "
+                                                    class="
+                                                      mdi mdi-image
+                                                      font-size-24
+                                                      text-purple
+                                                    "
+                                                  ></i>
+                                                  <i
+                                                    v-if="
+                                                      y.fileType.includes(
+                                                        'application'
+                                                      )
+                                                    "
+                                                    class="
+                                                      mdi mdi-file-pdf-outline
+                                                      font-size-24
+                                                      text-danger
+                                                    "
+                                                  ></i>
+                                                </div>
+                                              </div>
+                                              <div
+                                                class="d-flex"
+                                                @click="openDocument(y)"
+                                              >
+                                                <div
+                                                  class="
+                                                    overflow-hidden
+                                                    me-auto
+                                                  "
+                                                >
+                                                  <h5
+                                                    class="
+                                                      font-size-14
+                                                      text-truncate
+                                                      mb-1
+                                                    "
+                                                  >
+                                                    {{ y.description }}
+                                                  </h5>
+                                                  <p class="text-muted mb-0">
+                                                    {{
+                                                      formatDateWithTime(
+                                                        new Date(
+                                                          y.dateTimeUploaded
+                                                        )
+                                                      )
+                                                    }}
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </b-col>
+                                    </b-row>
+                                    <b-row
+                                      v-if="
+                                        searchDocu(propertyRow.item).length ==
+                                          0 && propertyRow.item.fileSearch
+                                      "
+                                    >
+                                      <b-col>Search Not Found</b-col>
+                                    </b-row>
+                                  </div>
+                                </b-card-body>
+                              </b-collapse>
+                            </b-collapse>
+                          </template>
+                        </b-table>
+                      </div>
+                      <div class="row">
+                        <div class="col">
+                          <div
+                            class="
+                              dataTables_paginate
+                              paging_simple_numbers
+                              float-end
+                            "
+                          >
+                            <ul
+                              class="pagination pagination-rounded mb-0"
+                              style="z-index: -1"
+                            >
+                              <b-pagination
+                                v-model="row.item.currentPage"
+                                :total-rows="propertyRows(row.item.details)"
+                                :per-page="10"
+                              ></b-pagination>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </b-card>
+                  </transition>
+                </template>
+              </b-table>
+            </div>
+            <div class="row">
+              <div class="col">
+                <div
+                  class="dataTables_paginate paging_simple_numbers float-end"
+                >
+                  <ul
+                    class="pagination pagination-rounded mb-0"
+                    style="z-index: -1"
+                  >
+                    <!-- pagination -->
+                    <b-pagination
+                      v-model="currentPage"
+                      :total-rows="rows"
+                      :per-page="perPage"
+                    ></b-pagination>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <Employee @dropData="dropEmployee($event)"></Employee>
+    <Location @dropData="dropLocation($event)"></Location>
+  </Layout>
+</template>
