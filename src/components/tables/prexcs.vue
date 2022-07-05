@@ -24,19 +24,21 @@ export default {
           label: " ",
           thStyle: { width: "30px" },
         },
-        {
-          key: "id",
-          thStyle: { width: "5%" },
-        },
+        // {
+        //   key: "id",
+        //   thStyle: { width: "5%" },
+        // },
         {
           key: "uacs",
+          label: "UACS",
           sortable: true,
           thStyle: { width: "15%" },
         },
         {
           key: "prexcName",
+          label: "PREXC Name",
           sortable: true,
-          thStyle: { width: "62%" },
+          thStyle: { width: "67%" },
         },
         {
           key: "balance",
@@ -63,16 +65,12 @@ export default {
     showDtls(row) {
       row.item.rotateChevy = !row.item.rotateChevy;
       if (row.item.showDetails) {
+        row.toggleDetails();
         row.item.showDetails = !row.item.showDetails;
-        setTimeout(() => {
-          row.toggleDetails();
-        }, 600);
       } else {
         this.fetchOE(row);
         row.toggleDetails();
-        setTimeout(() => {
-          row.item.showDetails = !row.item.showDetails;
-        }, 50);
+        row.item.showDetails = !row.item.showDetails;
       }
     },
     fetchOE(row) {

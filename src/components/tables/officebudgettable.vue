@@ -382,7 +382,7 @@ export default {
             'text-success': row.item.status.toLowerCase() === 'posted',
             'text-warning': row.item.status.toLowerCase() === 'pending',
           }"
-          >{{ row.item.status }}</span
+          >{{ row.item.status.toUpperCase() }}</span
         >
       </template>
       <template #cell(funds)="row">
@@ -414,6 +414,14 @@ export default {
             v-if="row.item.status.toLowerCase() !== 'posted'"
             ><i class="bx bx-edit font-size-16 text-warning align-middle me-2"></i
             >Edit</b-dropdown-item
+          >
+          <b-dropdown-item
+            @click="updateBudgetItem(row.item)"
+            v-if="row.item.status.toLowerCase() === 'posted'"
+            ><i
+              class="bx bx-fast-forward-circle font-size-16 text-warning align-middle me-2"
+            ></i
+            >Extend Expiry</b-dropdown-item
           >
           <b-dropdown-item
             @click="deleteBudgetItem(row.item)"

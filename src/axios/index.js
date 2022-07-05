@@ -1,13 +1,21 @@
 import axios from "axios";
+import Vue from "vue";
+import VueCryptojs from 'vue-cryptojs'
+Vue.use(VueCryptojs);
 
+var bearer = localStorage.getItem(
+  "accessToken"
+) ? decryptedUserData(localStorage.getItem(
+  "accessToken"
+)) : '';
 axios.defaults.baseURL = "https://www.cocyfms.codes/";
 axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 axios.defaults.headers.common["Access-Control-Allow-Origin"] = "*";
 axios.interceptors.request.use(
   function(config) {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
+    config.headers.common["Authorization"] = `Bearer ${decryptedUserData(localStorage.getItem(
       "accessToken"
-    )}`;
+    ))}`;
     return config;
   },
   function(error) {
@@ -29,9 +37,7 @@ export const api = axios.create({
 });
 api.interceptors.request.use(
   function(config) {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
-      "accessToken"
-    )}`;
+    config.headers.common["Authorization"] = `Bearer ${bearer}`;
     updateResponse(config, "request");
     return config;
   },
@@ -45,6 +51,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    console.log(error);
     updateResponse(error.config, "response");
     return Promise.reject(error);
   }
@@ -56,9 +63,7 @@ export const procurementAPI = axios.create({
 });
 procurementAPI.interceptors.request.use(
   (config) => {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
-      "accessToken"
-    )}`;
+    config.headers.common["Authorization"] = `Bearer ${bearer}`;
     updateResponse(config, "request");
     return config;
   },
@@ -83,9 +88,7 @@ export const coreAPI = axios.create({
 });
 coreAPI.interceptors.request.use(
   (config) => {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
-      "accessToken"
-    )}`;
+    config.headers.common["Authorization"] = `Bearer ${bearer}`;
     updateResponse(config, "response");
     return config;
   },
@@ -110,9 +113,7 @@ export const financeAPI = axios.create({
 });
 financeAPI.interceptors.request.use(
   function(config) {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
-      "accessToken"
-    )}`;
+    config.headers.common["Authorization"] = `Bearer ${bearer}`;
     updateResponse(config, "response");
     return config;
   },
@@ -138,9 +139,7 @@ export const planningAPI = axios.create({
 
 planningAPI.interceptors.request.use(
   function(config) {
-    config.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
-      "accessToken"
-    )}`;
+    config.headers.common["Authorization"] = `Bearer ${bearer}`;
     updateResponse(config, "response");
     return config;
   },
@@ -172,4 +171,18 @@ function updateResponse({ method }, type) {
   } else {
     document.getElementById("full-page-loader").classList.add("d-none");
   }
+}
+function decryptedUserData(encryptedText){
+  var rawData = Vue.CryptoJS.enc.Base64.parse(encryptedText);
+  var key = Vue.CryptoJS.enc.Latin1.parse("$b14cA5898a4e4142@@@2ea2143a2410");
+  var plaintextData = Vue.CryptoJS.AES.decrypt(
+      { ciphertext: rawData },
+      key,
+      {
+          iv: Vue.CryptoJS.enc.Latin1.parse(
+              ""
+          ),
+      }
+  );
+  return plaintextData.toString(Vue.CryptoJS.enc.Latin1);
 }

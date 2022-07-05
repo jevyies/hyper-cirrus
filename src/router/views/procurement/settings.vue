@@ -1,11 +1,11 @@
 <script>
 import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
-import ItemList from '@/router/views/procurement/settings-template/item-list';
-import UnitList from '@/router/views/procurement/settings-template/unit-list';
-import ItemCategory from '@/router/views/procurement/settings-template/item-category';
-import ModeOfProcurement from '@/router/views/procurement/settings-template/mode-of-procurement';
-import SupplierList from '@/router/views/procurement/settings-template/supplier-list';
+import ItemList from "@/router/views/procurement/settings-template/item-list";
+import UnitList from "@/router/views/procurement/settings-template/unit-list";
+import ItemCategory from "@/router/views/procurement/settings-template/item-category";
+import ModeOfProcurement from "@/router/views/procurement/settings-template/mode-of-procurement";
+import SupplierList from "@/router/views/procurement/settings-template/supplier-list";
 
 export default {
     page: {
@@ -18,7 +18,7 @@ export default {
         UnitList,
         ItemCategory,
         ModeOfProcurement,
-        SupplierList
+        SupplierList,
     },
     data() {
         return {
@@ -34,11 +34,8 @@ export default {
                     active: true,
                 },
             ],
-        }
+        };
     },
-    methods: {
-        
-    }
 };
 </script>
 <template>
@@ -56,8 +53,7 @@ export default {
                     <span class="d-inline-block d-sm-none">
                         <i class="bx bx-home"></i>
                     </span>
-                    <span class="d-none d-sm-inline-block"
-                        >Items</span>
+                    <span class="d-none d-sm-inline-block">Items</span>
                 </template>
                 <item-list ref="itemList"></item-list>
             </b-tab>
@@ -66,8 +62,7 @@ export default {
                     <span class="d-inline-block d-sm-none">
                         <i class="bx bx-home"></i>
                     </span>
-                    <span class="d-none d-sm-inline-block"
-                        >Item Category</span>
+                    <span class="d-none d-sm-inline-block">Item Category</span>
                 </template>
                 <item-category ref="itemCategory"></item-category>
             </b-tab>
@@ -76,8 +71,7 @@ export default {
                     <span class="d-inline-block d-sm-none">
                         <i class="bx bx-home"></i>
                     </span>
-                    <span class="d-none d-sm-inline-block"
-                        >Units</span>
+                    <span class="d-none d-sm-inline-block">Units</span>
                 </template>
                 <unit-list ref="unitList"></unit-list>
             </b-tab>
@@ -87,17 +81,19 @@ export default {
                         <i class="bx bx-home"></i>
                     </span>
                     <span class="d-none d-sm-inline-block"
-                        >Mode of Procurement</span>
+                        >Mode of Procurement</span
+                    >
                 </template>
-                <mode-of-procurement ref="modeOfProcurement"></mode-of-procurement>
+                <mode-of-procurement
+                    ref="modeOfProcurement"
+                ></mode-of-procurement>
             </b-tab>
             <b-tab title-item-class="mb-2">
                 <template v-slot:title>
                     <span class="d-inline-block d-sm-none">
                         <i class="bx bx-home"></i>
                     </span>
-                    <span class="d-none d-sm-inline-block"
-                        >Supplier</span>
+                    <span class="d-none d-sm-inline-block">Supplier</span>
                 </template>
                 <supplier-list ref="supplierList"></supplier-list>
             </b-tab>

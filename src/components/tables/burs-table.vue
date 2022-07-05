@@ -20,31 +20,37 @@ export default {
       sortDesc: false,
       fields: [
         {
-          key: "id",
+          key: "action",
+          label: " ",
           sortable: true,
-          tdClass: "col-md-1",
+          thStyle: { width: "3%" },
+        },
+        {
+          key: "serialNumber",
+          sortable: true,
+          thStyle: { width: "25%" },
         },
         {
           key: "payee",
           label: "Payee/Supplier",
           sortable: true,
-          tdClass: "col-md-3",
+          thStyle: { width: "25%" },
         },
         {
           key: "busDate",
           label: "Date",
           sortable: true,
-          tdClass: "col-md-2",
+          thStyle: { width: "15%" },
         },
         {
-          key: "details",
-          label: "Details",
+          key: "amount",
+          label: "Amount",
           sortable: true,
-          tdClass: "col-md-5",
+          thStyle: { width: "20%" },
         },
         {
           key: "actions",
-          tdClass: "col-md-1",
+          thStyle: { width: "12%" },
         },
       ],
       alert: {
@@ -101,12 +107,14 @@ export default {
     },
     fetchAttachments(record) {
       this.$store
-        .dispatch("filemanager/GetFiles", { id: record.id, type: "BURS" })
+        .dispatch("filemanager/GetFiles", { id: record.item.id, type: "BURS" })
         .then((response) => {
-          this.selectedRecord = record;
+          this.selectedRecord = record.item;
           this.attachments = response.data;
-          this.attachmentModalTitle = `Attachment for ${this.selectedRecord.serialNumber}`;
-          this.showAttachments = true;
+          record.item.attachments.push = [...response.data];
+          // this.attachmentModalTitle = `Attachment for ${this.selectedRecord.serialNumber}`;
+          // this.showAttachments = true;
+          record.toggleDetails();
         })
         .catch(() => {
           this.showToast("Something went wrong. Cannot fetch attachments.", "error");
@@ -143,6 +151,16 @@ export default {
     },
     printBurs(id) {
       this.$emit("printBurs", id);
+    },
+    showDtls(row) {
+      row.item.rotateChevy = !row.item.rotateChevy;
+      if (row.item.showDetails) {
+        row.toggleDetails();
+        row.item.showDetails = !row.item.showDetails;
+      } else {
+        row.toggleDetails();
+        row.item.showDetails = !row.item.showDetails;
+      }
     },
   },
   computed: {
@@ -196,10 +214,9 @@ export default {
         <div class="col-lg-12">
           <div class="table-responsive mb-0">
             <b-table
-              class="datatables"
+              class="table project-list-table table-nowrap align-middle table-borderless"
               :items="records"
               :fields="fields"
-              responsive="sm"
               :per-page="perPage"
               :current-page="currentPage"
               :sort-desc.sync="sortDesc"
@@ -207,10 +224,6 @@ export default {
               :filter-included-fields="filterOn"
               :busy="tableBusy"
               @filtered="onFiltered"
-              bordered
-              outlined
-              hover
-              striped
               show-empty
             >
               <template #empty="scope">
@@ -235,6 +248,19 @@ export default {
                   <strong>Loading...</strong>
                 </div>
               </template>
+              <template #cell(action)="row">
+                <div
+                  class="d-flex align-items-center justify-content-center"
+                  @click="showDtls(row)"
+                >
+                  <i
+                    class="bx bx-chevron-right rotate font-size-16 cursor-pointer"
+                    :class="{
+                      'rotate-90': row.item.rotateChevy,
+                    }"
+                  ></i>
+                </div>
+              </template>
               <template #cell(payee)="row">
                 <p class="mb-0 text-info">
                   {{ row.item.rfp.rfpPaymentItem.rfp.supplier.name }}
@@ -246,24 +272,10 @@ export default {
                   <small>{{ row.item.rfp.rfpPaymentItem.rfp.supplier.vatType }}</small>
                 </p>
               </template>
-              <template #cell(details)="row">
-                <a v-b-toggle.collapse-1 href="javascript:void(0)"
-                  ><i class="bx bx-chevron-down"></i> View Details</a
-                >
-                <b-collapse id="collapse-1" class="mt-2">
-                  <b-card>
-                    <p class="card-text">BUDGET UTILIZATION REQUEST & STATUS</p>
-                    <hr />
-                    <p class="mb-2">
-                      <strong>Particulars: </strong>
-                      <span>{{ row.item.particulars }}</span>
-                    </p>
-                    <p>
-                      <strong>Serial Number: </strong>
-                      <span>{{ row.item.serialNumber }}</span>
-                    </p>
-                  </b-card>
-                </b-collapse>
+              <template #cell(amount)="row">
+                <span class="text-warning">{{
+                  formatCurrency(row.item.rfp.amount)
+                }}</span>
               </template>
               <template #cell(busDate)="row">
                 {{ formatDate(row.item.busDate) }}
@@ -288,13 +300,13 @@ export default {
                     ><i class="bx bx-left-arrow-alt align-middle me-1"></i>
                     Return</b-dropdown-item
                   >
-                  <b-dropdown-item
+                  <!-- <b-dropdown-item
                     v-if="type === 'posted'"
-                    @click="fetchAttachments(row.item)"
+                    @click="fetchAttachments(row)"
                     variant="success"
                     ><i class="bx bx-paperclip align-middle me-1"></i>
                     Attachments</b-dropdown-item
-                  >
+                  > -->
 
                   <b-dropdown-item variant="primary" @click="printBurs(row.item.id)"
                     ><i class="bx bx-printer align-middle me-1"></i>
@@ -320,80 +332,111 @@ export default {
                     ><i class="bx bx-trash align-middle me-1"></i> Delete</b-dropdown-item
                   >
                 </b-dropdown>
-                <div class="d-flex flex-wrap gap-2" v-if="type">
-                  <!-- <b-button
-                    v-if="type === 'posted'"
-                    size="sm"
-                    variant="success"
-                    class="w-sm"
-                    @click="approve(row.item)"
-                  >
-                    <i class="bx bx-check-circle align-middle me-2"></i> Approve
-                  </b-button> -->
-                  <!-- <b-button
-                    v-if="type === 'posted'"
-                    size="sm"
-                    variant="outline-warning"
-                    class="w-sm inline-block m-auto"
-                    @click="returnBurs(row.item)"
-                  >
-                    <i class="bx bx-left-arrow-alt align-middle me-1"></i> Return
-                  </b-button> -->
-                  <!-- <b-button
-                    v-if="type === 'posted'"
-                    size="sm"
-                    variant="outline-info"
-                    class="w-sm inline-block m-auto"
-                    @click="row.item.viewUpload = true"
-                    :id="`approved-document${row.item.id}`"
-                  >
-                    <i class="bx bx-upload align-middle me-1"></i> Upload
-                  </b-button>
-                  <upload-popover
-                    :option="uploadOptions"
-                    :sourceId="row.item.id"
-                    @uploaded="uploadedPosted($event, row.item.id)"
-                    :showPV="row.item.viewUpload"
-                    @closePopover="row.item.viewUpload = !row.item.viewUpload"
-                    :dzId="`dropzone-posted${row.item.id}`"
-                    :pvId="`approved-document${row.item.id}`"
-                  ></upload-popover> -->
-                  <!-- <b-button
-                    v-if="type === 'posted'"
-                    size="sm"
-                    variant="outline-success"
-                    class="w-sm inline-block m-auto"
-                    @click="fetchAttachments(row.item)"
-                  >
-                    <i class="bx bx-paperclip align-middle me-1"></i> Attachments
-                  </b-button> -->
-                  <!-- <b-button
-                    v-if="type === 'pending'"
-                    size="sm"
-                    variant="primary"
-                    class="w-sm"
-                    @click="post(row.item)"
-                  >
-                    <i class="bx bx-upload align-middle me-1"></i> Post
-                  </b-button>
-                  <b-button
-                    v-if="type === 'pending'"
-                    size="sm"
-                    variant="outline-warning"
-                    class="w-sm"
-                    @click="update(row.item)"
-                  >
-                    <i class="bx bxs-pencil align-middle me-1"></i> Edit
-                  </b-button> -->
-                  <!-- <b-button
-                    size="sm"
-                    variant="outline-danger"
-                    v-if="type === 'pending'"
-                    @click="remove(row.item)"
-                  >
-                    <i class="bx bx-trash"></i>
-                  </b-button> -->
-                </div>
+              </template>
+              <template #row-details="row">
+                <b-card>
+                  <div id="details">
+                    <h5 class="card-title mt-2 mb-3 text-info">
+                      <i class="bx bx-file-blank me-3"></i>Details
+                    </h5>
+
+                    <p class="mb-2">
+                      <strong>Particulars: </strong>
+                      <span>{{ row.item.particulars }}</span>
+                    </p>
+                    <p>
+                      <strong>Serial Number: </strong>
+                      <span>{{ row.item.serialNumber }}</span>
+                    </p>
+                  </div>
+                  <hr />
+                  <div id="attachments">
+                    <div class="row">
+                      <div class="col-lg-6">
+                        <h5 class="card-title mt-2 text-warning">
+                          <i class="bx bx-paperclip me-3"></i>Attachments
+                        </h5>
+                      </div>
+                      <div class="col-lg-6 text-lg-end">
+                        <b-button
+                          variant="success"
+                          @click="row.item.viewUpload = true"
+                          :id="`burs-document${row.item.id}`"
+                          ><i class="bx bx-upload align-middle me-1"></i> Upload</b-button
+                        >
+                        <upload-popover
+                          :option="uploadOptions"
+                          :sourceId="row.item.id"
+                          @uploaded="uploadedPosted($event, row.item.id)"
+                          :showPV="row.item.viewUpload"
+                          @closePopover="row.item.viewUpload = !row.item.viewUpload"
+                          :dzId="`dropzone-posted${row.item.id}`"
+                          :pvId="`burs-document${row.item.id}`"
+                        ></upload-popover>
+                      </div>
+                    </div>
+                    <div class="mb-0 mt-5">
+                      <b-row>
+                        <b-col sm="4" v-for="y in attachments" :key="y.id" class="mb-2">
+                          <div class="position-relative cursor-pointer">
+                            <div class="border p-3">
+                              <div>
+                                <div class="float-end ms-2">
+                                  <b-dropdown
+                                    id="dropdown-dropleft"
+                                    right
+                                    variant="link"
+                                    toggle-class="text-decoration-none text-dark font-size-16 pt-0"
+                                    menu-class="dropdown-menu-end"
+                                    no-caret
+                                  >
+                                    <template #button-content>
+                                      <i class="mdi mdi-dots-horizontal"></i>
+                                    </template>
+                                    <b-dropdown-item @click="openDocument(y)"
+                                      ><i class="bx bx-link-external me-1"></i
+                                      >Open</b-dropdown-item
+                                    >
+                                    <b-dropdown-item
+                                      variant="danger"
+                                      @click="removeFile(y)"
+                                      ><i class="bx bx-trash me-1"></i
+                                      >Remove</b-dropdown-item
+                                    >
+                                  </b-dropdown>
+                                </div>
+                                <div class="avatar-xs me-3 mb-2" @click="openDocument(y)">
+                                  <div class="avatar-title bg-transparent rounded">
+                                    <i
+                                      v-if="y.fileType.includes('image')"
+                                      class="mdi mdi-image font-size-24 text-purple"
+                                    ></i>
+                                    <i
+                                      v-if="y.fileType.includes('application')"
+                                      class="mdi mdi-file-pdf-outline font-size-24 text-danger"
+                                    ></i>
+                                  </div>
+                                </div>
+                                <div class="d-flex" @click="openDocument(y)">
+                                  <div class="overflow-hidden me-auto">
+                                    <h5 class="font-size-14 text-truncate mb-1">
+                                      {{ y.description }}
+                                    </h5>
+                                    <p class="text-muted mb-0">
+                                      {{
+                                        formatDateWithTime(new Date(y.dateTimeUploaded))
+                                      }}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </b-col>
+                      </b-row>
+                    </div>
+                  </div>
+                </b-card>
               </template>
             </b-table>
           </div>
@@ -416,7 +459,7 @@ export default {
       </div>
     </div>
     <!-- Modals here -->
-    <b-modal
+    <!-- <b-modal
       :title="attachmentModalTitle"
       v-model="showAttachments"
       size="lg"
@@ -493,6 +536,6 @@ export default {
           </b-col>
         </b-row>
       </div>
-    </b-modal>
+    </b-modal> -->
   </div>
 </template>

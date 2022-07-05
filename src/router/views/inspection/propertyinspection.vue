@@ -85,51 +85,37 @@ export default {
       employeeId: { required },
     },
   },
-  computed: {
-    filtered() {
-      let data = this.tableData;
-      var total = this.currentPage * this.perPage;
-      if (this.filter.trim() != "" && this.filter) {
-        data = data.filter((item) => {
-          if (
-            this.formatDateWithTime(new Date(item.inspectionDateTime))
-              .toUpperCase()
-              .includes(this.filter.toUpperCase())
-          )
-            return this.formatDateWithTime(new Date(item.inspectionDateTime))
-              .toUpperCase()
-              .includes(this.filter.toUpperCase());
-          // else if (
-          //   item.poNumber.toUpperCase().includes(this.filter.toUpperCase())
-          // )
-          //   return item.poNumber
-          //     .toUpperCase()
-          //     .includes(this.filter.toUpperCase());
-          // else if (
-          //   item.rfqSupplier.supplier.name
-          //     .toUpperCase()
-          //     .includes(this.filter.toUpperCase())
-          // )
-          //   return item.rfqSupplier.supplier.name
-          //     .toUpperCase()
-          //     .includes(this.filter.toUpperCase());
-        });
-      }
-      var currentData = data.slice(total - this.perPage, total);
-      if (this.currentPage > 1 && currentData.length == 0) {
-        total = (this.currentPage - 1) * this.perPage;
-        currentData = data.slice(total - this.perPage, total);
-      }
-      return currentData;
-    },
-    rows() {
-      if (this.filter.trim() != "" && this.filter) {
-        return this.filtered.length;
-      } else {
-        return this.tableData.length;
-      }
-    },
-  },
+  // computed: {
+  //   filtered() {
+  //     let data = this.tableData;
+  //     var total = this.currentPage * this.perPage;
+  //     if (this.filter.trim() != "" && this.filter) {
+  //       data = data.filter((item) => {
+  //         if (
+  //           this.formatDate(new Date(item.inspectionDateTime))
+  //             .toUpperCase()
+  //             .includes(this.filter.toUpperCase())
+  //         )
+  //           return this.formatDate(new Date(item.inspectionDateTime))
+  //             .toUpperCase()
+  //             .includes(this.filter.toUpperCase());
+  //       });
+  //     }
+  //     var currentData = data.slice(total - this.perPage, total);
+  //     if (this.currentPage > 1 && currentData.length == 0) {
+  //       total = (this.currentPage - 1) * this.perPage;
+  //       currentData = data.slice(total - this.perPage, total);
+  //     }
+  //     return currentData;
+  //   },
+  //   rows() {
+  //     if (this.filter.trim() != "" && this.filter) {
+  //       return this.filtered.length;
+  //     } else {
+  //       return this.tableData.length;
+  //     }
+  //   },
+  // },
   async created() {
     await this.$store
       .dispatch("property/GetSingleProperty", this.$route.params.id)
@@ -327,11 +313,14 @@ export default {
       this.$bvModal.show("modal-standard");
     },
     updateInspection(props) {
-      console.log(props)
+      console.log(props);
       this.form = cloneDeep(props);
       this.form.inspectionDateTime = new Date(this.form.inspectionDateTime);
       this.form.employeeId = props.employeeId;
-      this.employeeName = props.employee.firstName.concat(" ", props.employee.lastName);
+      this.employeeName = props.employee.firstName.concat(
+        " ",
+        props.employee.lastName
+      );
       this.editInspection = true;
       this.modalTitle = "Update Inspection";
       this.$bvModal.show("modal-standard");
@@ -654,13 +643,13 @@ export default {
       "
     >
       <div class="card-body">
-        <div class="row mb-3">
+        <div class="row mb-4">
           <div class="col-md-6">
             <div class="d-flex align-items-center h-100">
               <div>
                 <h4 class="mb-1">{{ property.name }}</h4>
                 <div class="d-flex align-items-center h-100">
-                  Condition: 
+                  Condition:
                   <h6 class="mb-0 ms-2">{{ property.condition }}</h6>
                 </div>
               </div>
@@ -678,7 +667,7 @@ export default {
             </div>
           </div>
         </div>
-        <div class="row mb-1">
+        <!-- <div class="row mb-1">
           <div class="col-md-6"></div>
           <div class="col-md-6">
             <div class="d-flex float-end">
@@ -706,7 +695,7 @@ export default {
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
         <div
           class="h-50vh d-flex align-items-center justify-content-center"
           v-if="loading"
@@ -735,151 +724,187 @@ export default {
         </div>
         <div
           class="pt-1 pb-1 text-muted"
-          role="tablist"
-          v-for="x in filtered"
-          :key="x.id"
         >
-          <b-card no-body class="mb-1">
-            <b-card-header header-tag="header" class="border" role="tab">
-              <div class="row mb-2">
-                <div class="col">
-                  <b class="font-size-16">
-                    {{ formatDateWithTime(new Date(x.inspectionDateTime)) }}
-                  </b>
-                  <div class="font-size-12 mb-1">
-                    Property Status:
-                    <b class="font-size-14">{{ x.propertyStatus }}</b>
-                  </div>
-                  <div class="font-size-12 mb-1">
-                    Assessed Value:
-                    <b class="font-size-14">{{ x.assessedValue }}</b>
-                  </div>
-                  <div class="font-size-12 mb-1">
-                    Inspection Status:
-                    <b class="font-size-14">{{ x.inspectionStatus }}</b>
-                  </div>
-                  <div class="font-size-12 mb-1">
-                    Inspected By:
-                    <b v-if="x.employee" class="font-size-14">
-                      {{
-                        x.employee.firstName.charAt(0).toUpperCase() +
-                        x.employee.firstName.slice(1)
-                      }}
-                      {{
-                        x.employee.middleName
-                          ? `${x.employee.middleName.charAt(0).toUpperCase()}.`
-                          : ""
-                      }}
-                      {{
-                        x.employee.lastName.charAt(0).toUpperCase() +
-                        x.employee.lastName.slice(1)
-                      }}</b
-                    >
-                    <b v-else class="font-size-14">n/a</b>
-                  </div>
-                  <div class="font-size-16 mb-1">
-                    <span
-                      v-if="x.status == 'PENDING'"
-                      class="badge bg-warning bg-soft text-warning"
-                      ><b>{{ x.status }}</b></span
-                    >
-                    <span v-if="x.status == 'POSTED'" class="badge bg-success"
-                      ><b>{{ x.status }}</b></span
-                    >
-                  </div>
-                </div>
-                <div class="col">
-                  <div class="float-end d-flex align-items-top">
-                    <b-dropdown
-                      id="dropdown-dropleft"
-                      right
-                      variant="link"
-                      toggle-class="text-decoration-none"
-                      menu-class="dropdown-menu-end"
-                      no-caret
-                    >
-                      <template #button-content>
-                        <i class="fas fa-ellipsis-v rotate rotate-90"></i>
-                      </template>
-                      <b-dropdown-item @click="updateInspection(x)"
-                        ><i class="mdi mdi-update font-size-18 me-1"></i>Update
-                        Inspection</b-dropdown-item
-                      >
-                      <b-dropdown-item
-                        variant="success"
-                        v-if="x.status == 'PENDING'"
-                        @click="postItem(x)"
-                        ><i class="bx bx-check-circle font-size-18 me-1"></i
-                        >Post Inspection</b-dropdown-item
-                      >
-                      <b-dropdown-item
-                        variant="warning"
-                        v-if="x.status == 'POSTED'"
-                        @click="unpostItem(x)"
-                        ><i class="bx bx-x-circle font-size-18 me-1"></i>Unpost
-                        Inspection</b-dropdown-item
-                      >
-                      <b-dropdown-item
-                        variant="danger"
-                        v-if="x.status == 'PENDING'"
-                        @click="deleteItem(x)"
-                        ><i class="mdi mdi-trash-can font-size-18 me-1"></i
-                        >Delete</b-dropdown-item
-                      >
-                    </b-dropdown>
-                  </div>
-                </div>
+          <ul
+            class="verti-timeline list-unstyled mb-2 ms-4"
+            v-for="x in tableData"
+            :key="x.id"
+          >
+            <li
+              class="event-list"
+              :class="{
+                active: x.status == 'PENDING',
+              }"
+            >
+              <div class="event-timeline-dot">
+                <i
+                  v-if="x.status == 'PENDING'"
+                  class="bx bxs-right-arrow-circle font-size-18 bx-fade-right"
+                ></i>
+                <i v-else class="bx bx-right-arrow-circle font-size-18"></i>
               </div>
-              <!-- <div>
-                <b class="font-size-14">
-                  <i class="bx bx-paperclip rotate rotate-90"></i>
-                  Attachments
-                </b>
-              </div> -->
-            </b-card-header>
-            <b-card-body class="border">
-              <div
-                class="
-                  d-flex
-                  align-items-center
-                  justify-content-between
-                  cursor-pointer
-                "
-                @click="getAttachments(x)"
-              >
-                <h6 class="mb-0 text-muted">
-                  <i class="bx bx-paperclip rotate rotate-90"></i>
-                  Attachments
-                </h6>
-                <h5 class="mb-0">
-                  <i
-                    class="bx bx-chevron-right rotate"
-                    :class="{
-                      'rotate-90': x.attachmentVisible,
-                    }"
-                  ></i>
-                </h5>
-              </div>
-            </b-card-body>
-            <b-collapse :visible="x.attachmentVisible" role="tabpanel">
-              <b-card-body class="border">
-                <div
-                  class="d-flex align-items-center justify-content-between mb-3"
-                >
-                  <div class="d-flex">
-                    <p class="mb-0" v-if="x.inspectionFiles.length == 0">
-                      <i>No documents found</i>
-                    </p>
-                    <input
-                      v-if="x.inspectionFiles.length > 0"
-                      type="search"
-                      class="form-control"
-                      v-model="x.fileSearch"
-                      placeholder="Search Documents..."
-                    />
-                  </div>
-                  <div class="">
-                    <!-- <button
+              <div class="media ms-3">
+                <div class="media-body">
+                  <b-card no-body class="mb-1">
+                    <b-card-header
+                      header-tag="header"
+                      class="border"
+                      role="tab"
+                    >
+                      <div class="row mb-2">
+                        <div class="col">
+                          <b class="font-size-16">
+                            {{ formatDate(new Date(x.inspectionDateTime)) }}
+                          </b>
+                          <div class="font-size-12 mb-1">
+                            Property Status:
+                            <b class="font-size-14">{{ x.propertyStatus }}</b>
+                          </div>
+                          <div class="font-size-12 mb-1">
+                            Assessed Value:
+                            <b class="font-size-14">{{ x.assessedValue }}</b>
+                          </div>
+                          <div class="font-size-12 mb-1">
+                            Inspection Status:
+                            <b class="font-size-14">{{ x.inspectionStatus }}</b>
+                          </div>
+                          <div class="font-size-12 mb-1">
+                            Inspected By:
+                            <b v-if="x.employee" class="font-size-14">
+                              {{
+                                x.employee.firstName.charAt(0).toUpperCase() +
+                                x.employee.firstName.slice(1)
+                              }}
+                              {{
+                                x.employee.middleName
+                                  ? `${x.employee.middleName
+                                      .charAt(0)
+                                      .toUpperCase()}.`
+                                  : ""
+                              }}
+                              {{
+                                x.employee.lastName.charAt(0).toUpperCase() +
+                                x.employee.lastName.slice(1)
+                              }}</b
+                            >
+                            <b v-else class="font-size-14">n/a</b>
+                          </div>
+                          <div class="font-size-16 mb-1">
+                            <span
+                              v-if="x.status == 'PENDING'"
+                              class="badge bg-warning bg-soft text-warning"
+                              ><b>{{ x.status }}</b></span
+                            >
+                            <span
+                              v-if="x.status == 'POSTED'"
+                              class="badge bg-success"
+                              ><b>{{ x.status }}</b></span
+                            >
+                          </div>
+                        </div>
+                        <div class="col">
+                          <div class="float-end d-flex align-items-top">
+                            <b-dropdown
+                              id="dropdown-dropleft"
+                              right
+                              variant="link"
+                              toggle-class="text-decoration-none"
+                              menu-class="dropdown-menu-end"
+                              no-caret
+                            >
+                              <template #button-content>
+                                <i
+                                  class="fas fa-ellipsis-v rotate rotate-90"
+                                ></i>
+                              </template>
+                              <b-dropdown-item
+                                v-if="x.status == 'PENDING'"
+                                @click="updateInspection(x)"
+                                variant="info"
+                                ><i class="mdi mdi-update font-size-18 me-1"></i
+                                >Update Inspection</b-dropdown-item
+                              >
+                              <b-dropdown-item
+                                variant="success"
+                                v-if="x.status == 'PENDING'"
+                                @click="postItem(x)"
+                                ><i
+                                  class="bx bx-check-circle font-size-18 me-1"
+                                ></i
+                                >Post Inspection</b-dropdown-item
+                              >
+                              <b-dropdown-item
+                                variant="warning"
+                                v-if="x.status == 'POSTED'"
+                                @click="unpostItem(x)"
+                                ><i class="bx bx-x-circle font-size-18 me-1"></i
+                                >Unpost Inspection</b-dropdown-item
+                              >
+                              <b-dropdown-item
+                                variant="danger"
+                                v-if="x.status == 'PENDING'"
+                                @click="deleteItem(x)"
+                                ><i
+                                  class="mdi mdi-trash-can font-size-18 me-1"
+                                ></i
+                                >Delete</b-dropdown-item
+                              >
+                            </b-dropdown>
+                          </div>
+                        </div>
+                      </div>
+                    </b-card-header>
+                    <b-card-body class="border">
+                      <div
+                        class="
+                          d-flex
+                          align-items-center
+                          justify-content-between
+                          cursor-pointer
+                        "
+                        @click="getAttachments(x)"
+                      >
+                        <h6 class="mb-0 text-muted">
+                          <i class="bx bx-paperclip rotate rotate-90"></i>
+                          Attachments
+                        </h6>
+                        <h5 class="mb-0">
+                          <i
+                            class="bx bx-chevron-right rotate"
+                            :class="{
+                              'rotate-90': x.attachmentVisible,
+                            }"
+                          ></i>
+                        </h5>
+                      </div>
+                    </b-card-body>
+                    <b-collapse :visible="x.attachmentVisible" role="tabpanel">
+                      <b-card-body class="border">
+                        <div
+                          class="
+                            d-flex
+                            align-items-center
+                            justify-content-between
+                            mb-3
+                          "
+                        >
+                          <div class="d-flex">
+                            <p
+                              class="mb-0"
+                              v-if="x.inspectionFiles.length == 0"
+                            >
+                              <i>No documents found</i>
+                            </p>
+                            <input
+                              v-if="x.inspectionFiles.length > 0"
+                              type="search"
+                              class="form-control"
+                              v-model="x.fileSearch"
+                              placeholder="Search Documents..."
+                            />
+                          </div>
+                          <div class="">
+                            <!-- <button
                       type="button"
                       :id="`posted-document${x.id}`"
                       @click="x.addDocu = true"
@@ -893,109 +918,143 @@ export default {
                     >
                       <i class="bx bx-plus fs-6"></i>Upload Documents
                     </button> -->
-                    <a
-                      href="javascript:void(0);"
-                      class="text-primary border-primary border p-2"
-                      :id="`posted-document${x.id}`"
-                      @click="x.addDocu = true"
-                      ><i class="bx bx-plus"></i>Upload Documents</a
-                    >
-                    <upload-popover
-                      :option="uploadOptions"
-                      :sourceId="x.id"
-                      @uploaded="uploadDocument($event, x.id)"
-                      :showPV="x.addDocu"
-                      @closePopover="x.addDocu = false"
-                      :dzId="`dropzone-posted${x.id}`"
-                      :pvId="`posted-document${x.id}`"
-                    ></upload-popover>
-                  </div>
-                </div>
-                <div class="mt-2">
-                  <b-row>
-                    <b-col
-                      sm="3"
-                      v-for="(y, index) in searchDocu(x)"
-                      :key="y.id"
-                      class="mb-2"
-                    >
-                      <div
-                        class="position-relative cursor-pointer"
-                        :style="`z-index: ${x.inspectionFiles.length - index}`"
-                      >
-                        <div class="border p-3">
-                          <div>
-                            <div class="float-end ms-2">
-                              <b-dropdown
-                                id="dropdown-dropleft"
-                                right
-                                variant="link"
-                                toggle-class="text-decoration-none text-dark font-size-16 pt-0"
-                                menu-class="dropdown-menu-end"
-                                no-caret
-                              >
-                                <template #button-content>
-                                  <i class="mdi mdi-dots-horizontal"></i>
-                                </template>
-                                <b-dropdown-item @click="openDocument(y)"
-                                  ><i class="bx bx-link-external me-1"></i
-                                  >Open</b-dropdown-item
-                                >
-                                <b-dropdown-item
-                                  variant="danger"
-                                  @click="removeFile(y.id, x.id)"
-                                  ><i class="bx bx-trash me-1"></i
-                                  >Remove</b-dropdown-item
-                                >
-                              </b-dropdown>
-                            </div>
-                            <div
-                              class="avatar-xs me-3 mb-2"
-                              @click="openDocument(y)"
+                            <a
+                              href="javascript:void(0);"
+                              class="text-primary border-primary border p-2"
+                              :id="`posted-document${x.id}`"
+                              @click="x.addDocu = true"
+                              ><i class="bx bx-plus"></i>Upload Documents</a
                             >
-                              <div class="avatar-title bg-transparent rounded">
-                                <i
-                                  v-if="y.fileType.includes('image')"
-                                  class="mdi mdi-image font-size-24 text-purple"
-                                ></i>
-                                <i
-                                  v-if="y.fileType.includes('application')"
-                                  class="
-                                    mdi mdi-file-pdf-outline
-                                    font-size-24
-                                    text-danger
-                                  "
-                                ></i>
-                              </div>
-                            </div>
-                            <div class="d-flex" @click="openDocument(y)">
-                              <div class="overflow-hidden me-auto">
-                                <h5 class="font-size-14 text-truncate mb-1">
-                                  {{ y.description }}
-                                </h5>
-                                <p class="text-muted mb-0">
-                                  {{
-                                    formatDateWithTime(
-                                      new Date(y.dateTimeUploaded)
-                                    )
-                                  }}
-                                </p>
-                              </div>
-                            </div>
+                            <upload-popover
+                              :option="uploadOptions"
+                              :sourceId="x.id"
+                              @uploaded="uploadDocument($event, x.id)"
+                              :showPV="x.addDocu"
+                              @closePopover="x.addDocu = false"
+                              :dzId="`dropzone-posted${x.id}`"
+                              :pvId="`posted-document${x.id}`"
+                            ></upload-popover>
                           </div>
                         </div>
-                      </div>
-                    </b-col>
-                  </b-row>
-                  <b-row v-if="searchDocu(x).length == 0 && x.fileSearch">
-                    <b-col>Search Not Found</b-col>
-                  </b-row>
+                        <div class="mt-2">
+                          <b-row>
+                            <b-col
+                              sm="3"
+                              v-for="(y, index) in searchDocu(x)"
+                              :key="y.id"
+                              class="mb-2"
+                            >
+                              <div
+                                class="position-relative cursor-pointer"
+                                :style="`z-index: ${
+                                  x.inspectionFiles.length - index
+                                }`"
+                              >
+                                <div class="border p-3">
+                                  <div>
+                                    <div class="float-end ms-2">
+                                      <b-dropdown
+                                        id="dropdown-dropleft"
+                                        right
+                                        variant="link"
+                                        toggle-class="text-decoration-none text-dark font-size-16 pt-0"
+                                        menu-class="dropdown-menu-end"
+                                        no-caret
+                                      >
+                                        <template #button-content>
+                                          <i
+                                            class="mdi mdi-dots-horizontal"
+                                          ></i>
+                                        </template>
+                                        <b-dropdown-item
+                                          @click="openDocument(y)"
+                                          ><i
+                                            class="bx bx-link-external me-1"
+                                          ></i
+                                          >Open</b-dropdown-item
+                                        >
+                                        <b-dropdown-item
+                                          variant="danger"
+                                          @click="removeFile(y.id, x.id)"
+                                          ><i class="bx bx-trash me-1"></i
+                                          >Remove</b-dropdown-item
+                                        >
+                                      </b-dropdown>
+                                    </div>
+                                    <div
+                                      class="avatar-xs me-3 mb-2"
+                                      @click="openDocument(y)"
+                                    >
+                                      <div
+                                        class="
+                                          avatar-title
+                                          bg-transparent
+                                          rounded
+                                        "
+                                      >
+                                        <i
+                                          v-if="y.fileType.includes('image')"
+                                          class="
+                                            mdi mdi-image
+                                            font-size-24
+                                            text-purple
+                                          "
+                                        ></i>
+                                        <i
+                                          v-if="
+                                            y.fileType.includes('application')
+                                          "
+                                          class="
+                                            mdi mdi-file-pdf-outline
+                                            font-size-24
+                                            text-danger
+                                          "
+                                        ></i>
+                                      </div>
+                                    </div>
+                                    <div
+                                      class="d-flex"
+                                      @click="openDocument(y)"
+                                    >
+                                      <div class="overflow-hidden me-auto">
+                                        <h5
+                                          class="
+                                            font-size-14
+                                            text-truncate
+                                            mb-1
+                                          "
+                                        >
+                                          {{ y.description }}
+                                        </h5>
+                                        <p class="text-muted mb-0">
+                                          {{
+                                            formatDateWithTime(
+                                              new Date(y.dateTimeUploaded)
+                                            )
+                                          }}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </b-col>
+                          </b-row>
+                          <b-row
+                            v-if="searchDocu(x).length == 0 && x.fileSearch"
+                          >
+                            <b-col>Search Not Found</b-col>
+                          </b-row>
+                        </div>
+                      </b-card-body>
+                    </b-collapse>
+                  </b-card>
                 </div>
-              </b-card-body>
-            </b-collapse>
-          </b-card>
+              </div>
+            </li>
+          </ul>
         </div>
-        <div
+        <!-- <div
           class="
             dataTables_paginate
             paging_simple_numbers
@@ -1006,14 +1065,13 @@ export default {
           "
         >
           <ul class="pagination pagination-rounded mb-0" style="z-index: -1">
-            <!-- pagination -->
             <b-pagination
               v-model="currentPage"
               :total-rows="rows"
               :per-page="perPage"
             ></b-pagination>
           </ul>
-        </div>
+        </div> -->
       </div>
     </div>
     <Employee @dropData="dropEmployee($event)"></Employee>

@@ -42,31 +42,31 @@ export default {
       currentPage: 1,
       perPage: 10,
       pageOptions: [10, 25, 50, 100],
-      filter: null,
+      filter: "",
       filterOn: [],
       sortBy: "poNumber",
       sortDesc: false,
       fields: [
-        // {
-        //   key: "displayDetails",
-        //   sortable: false,
-        //   label: " ",
-        //   thStyle: { width: "30px" },
-        // },
+        {
+          key: "displayDetails",
+          sortable: false,
+          label: " ",
+          thStyle: { width: "30px" },
+        },
         {
           key: "poNumber",
           sortable: true,
-          label: "PO Number",
+          label: "Purchase Order",
         },
-        {
-          key: "supplier",
-          sortable: true,
-          label: "Supplier",
-        },
-        {
-          key: "actions",
-          thStyle: { width: "150px" },
-        },
+        // {
+        //   key: "supplier",
+        //   sortable: true,
+        //   label: "Supplier",
+        // },
+        // {
+        //   key: "actions",
+        //   thStyle: { width: "150px" },
+        // },
       ],
       propertyFields: [
         {
@@ -86,9 +86,6 @@ export default {
     };
   },
   computed: {
-    rows() {
-      return this.tableData.length;
-    },
     grouped() {
       var grouped = groupBy(this.tableData, "poNumber");
       var array = [];
@@ -98,9 +95,37 @@ export default {
           details: grouped[key],
           showDetails: false,
           rotateChevy: false,
+          currentPage: 1,
+          filter: "",
+          tableBusy: false,
         });
       }
       return array;
+    },
+    filtered() {
+      let data = this.grouped;
+      if (this.filter.trim() != "" && this.filter) {
+        data = data.filter((x) => {
+          if (x.poNumber.toUpperCase().includes(this.filter.toUpperCase()))
+            return x.poNumber.toUpperCase().includes(this.filter.toUpperCase());
+          else {
+            var supplier = 0;
+            x.details.forEach((y) => {
+              if (y.supplier.toUpperCase().includes(this.filter.toUpperCase()))
+                supplier++;
+            });
+            if (supplier > 0) return true;
+          }
+        });
+      }
+      return data;
+    },
+    rows() {
+      if (this.filter.trim() != "" && this.filter) {
+        return this.filtered.length;
+      } else {
+        return this.grouped.length;
+      }
     },
   },
   created() {
@@ -111,10 +136,6 @@ export default {
       .then((res) => {
         this.tableBusy = false;
         res.data.forEach((item) => {
-          item.currentPage = 1;
-          item.filter = null;
-          item.filterOn = [];
-          item.tableBusy = false;
           item.visible = false;
           item.itemVisible = false;
           item.assignmentHistory = [];
@@ -137,12 +158,28 @@ export default {
       });
   },
   methods: {
-    onFiltered(filteredItems) {
-      this.totalRows = filteredItems.length;
-      this.currentPage = 1;
+    propertyFiltered(row) {
+      let data = row.details;
+      if (row.filter.trim() != "" && row.filter) {
+        data = data.filter((x) => {
+          if (x.name.toUpperCase().includes(row.filter.toUpperCase()))
+            return x.name.toUpperCase().includes(row.filter.toUpperCase());
+          else if (
+            x.propertyNumber.toUpperCase().includes(row.filter.toUpperCase())
+          )
+            return x.propertyNumber
+              .toUpperCase()
+              .includes(row.filter.toUpperCase());
+        });
+      }
+      return data;
     },
-    propertyRows(props) {
-      return props.length;
+    propertyRows(row) {
+      if (row.filter.trim() != "" && row.filter) {
+        return this.propertyFiltered(row).length;
+      } else {
+        return row.details.length;
+      }
     },
     deleteItem(props) {
       var index = this.tableData.indexOf(props);
@@ -184,6 +221,15 @@ export default {
         }, 50);
       }
     },
+    searchDtls(row) {
+      row.item.rotateChevy = true;
+      if (!row.item.showDetails) {
+        row.toggleDetails();
+        setTimeout(() => {
+          row.item.showDetails = true;
+        }, 50);
+      }
+    },
     setDate(date) {
       const nDate = new Date(
         new Date(date).getTime() -
@@ -213,6 +259,12 @@ export default {
             );
           });
       }
+    },
+    ifCurrent(id, current) {
+      if (current) {
+        if (id == current.id) return true;
+      }
+      return false;
     },
     uploadDocument(response, id) {
       var index = this.tableData.findIndex((x) => x.id == id);
@@ -315,7 +367,7 @@ export default {
                         autocomplete="off"
                         v-model="filter"
                         type="search"
-                        placeholder="Search Property..."
+                        placeholder="Search PO / Supplier..."
                         class="form-control"
                       ></b-form-input>
                     </label>
@@ -337,17 +389,14 @@ export default {
             <div class="table-responsive mb-0 mt-2">
               <b-table
                 class="datatables target-table"
-                :items="grouped"
+                :items="filtered"
                 :fields="fields"
                 responsive="sm"
                 :per-page="perPage"
                 :current-page="currentPage"
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc"
-                :filter="filter"
-                :filter-included-fields="filterOn"
                 :busy="tableBusy"
-                @filtered="onFiltered"
                 bordered
                 striped
                 show-empty
@@ -375,10 +424,29 @@ export default {
                   </div>
                 </template>
                 <template #cell(poNumber)="row">
-                  <b class="text-muted">{{ row.value }}</b>
-                </template>
-                <template #cell(supplier)="row">
-                  {{ row.item.details[0].supplier }}
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <b class="text-muted">{{ row.value }}</b>
+                      <div>
+                        {{ row.item.details[0].supplier }}
+                      </div>
+                    </div>
+                    <div>
+                      <label class="d-inline-flex align-items-center m-0 p-0">
+                        Search:
+                        <b-form-input
+                          autocomplete="off"
+                          v-model="row.item.filter"
+                          type="search"
+                          placeholder="Search Property..."
+                          @click="searchDtls(row)"
+                          class="form-control form-control-sm ms-2"
+                        ></b-form-input>
+                      </label>
+                    </div>
+                  </div>
                 </template>
                 <template #cell(actions)="row">
                   <!-- <div class="float-end">
@@ -425,7 +493,12 @@ export default {
                 </template>
                 <template #cell(displayDetails)="row">
                   <div
-                    class="d-flex align-items-center justify-content-center"
+                    class="
+                      mt-2
+                      d-flex
+                      align-items-center
+                      justify-content-center
+                    "
                     @click="showDtls(row)"
                   >
                     <i
@@ -442,7 +515,7 @@ export default {
                   </div>
                 </template>
                 <template #row-details="row">
-                  <transition name="max-height">
+                  <b-collapse :visible="row.item.showDetails">
                     <b-card
                       no-body
                       class="
@@ -451,9 +524,8 @@ export default {
                         mb-0
                         border-5 border-top-0 border-start-0 border-end-0
                       "
-                      v-if="row.item.showDetails"
                     >
-                      <div
+                      <!-- <div
                         id="tickets-table_filter"
                         class="dataTables_filter text-md-end"
                       >
@@ -467,22 +539,19 @@ export default {
                             class="form-control form-control-sm ms-2"
                           ></b-form-input>
                         </label>
-                      </div>
+                      </div> -->
                       <div class="table-responsive mb-0">
                         <b-table
                           class="datatables target-table"
                           thead-class="d-none"
-                          :items="row.item.details"
+                          :items="propertyFiltered(row.item)"
                           :fields="propertyFields"
                           responsive="sm"
                           :per-page="5"
                           :current-page="row.item.currentPage"
                           sort-by="name"
                           :sort-desc="false"
-                          :filter="row.item.filter"
-                          :filter-included-fields="row.item.filterOn"
                           :busy="row.item.tableBusy"
-                          @filtered="row.item.currentPage = 1"
                           show-empty
                         >
                           <template #empty="scope">
@@ -550,9 +619,7 @@ export default {
                                     </h5>
                                     <div>
                                       <small class="d-flex align-items-center"
-                                        >{{
-                                          setAmount(propertyRow.item.amount)
-                                        }}
+                                        >{{ propertyRow.item.propertyNumber }}
                                         |
                                         <a
                                           href="javascript: void(0);"
@@ -589,7 +656,7 @@ export default {
                                     </div>
                                   </div>
                                 </div>
-                                <div
+                                <!-- <div
                                   style="width: 30%"
                                   class="d-flex align-items-center"
                                 >
@@ -626,7 +693,7 @@ export default {
                                       }}
                                     </h6>
                                   </div>
-                                </div>
+                                </div> -->
                               </div>
                             </b-card-header>
                             <b-collapse
@@ -671,8 +738,8 @@ export default {
                                     <b-col sm="6">
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Property Name:</b></b-col
-                                        >
+                                          <b>Property Name:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.name
                                         }}</b-col>
@@ -687,8 +754,8 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Color:</b></b-col
-                                        >
+                                          <b>Color:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.color
                                         }}</b-col>
@@ -703,32 +770,32 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Material Used:</b></b-col
-                                        >
+                                          <b>Material Used:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.materialUsed
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Package Description:</b></b-col
-                                        >
+                                          <b>Package Description:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.packageDescription
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Property Number:</b></b-col
-                                        >
+                                          <b>Property Number:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.propertyNumber
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Serial Number:</b></b-col
-                                        >
+                                          <b>Serial Number:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.serialNumber
                                         }}</b-col>
@@ -747,8 +814,8 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Amount:</b></b-col
-                                        >
+                                          <b>Amount:</b>
+                                        </b-col>
                                         <b-col>{{
                                           setAmount(propertyRow.item.amount)
                                         }}</b-col>
@@ -765,16 +832,16 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Yearly Depreciation:</b></b-col
-                                        >
+                                          <b>Yearly Depreciation:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.yearlyDepreciation
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Salvage Value:</b></b-col
-                                        >
+                                          <b>Salvage Value:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.salvageValue
                                         }}</b-col>
@@ -789,8 +856,8 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Supplier:</b></b-col
-                                        >
+                                          <b>Supplier:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.supplier
                                         }}</b-col>
@@ -805,32 +872,32 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Notes:</b></b-col
-                                        >
+                                          <b>Notes:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.note
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Brand:</b></b-col
-                                        >
+                                          <b>Brand:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.brand
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Property Condition:</b></b-col
-                                        >
+                                          <b>Property Condition:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.condition
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Model:</b></b-col
-                                        >
+                                          <b>Model:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.model
                                         }}</b-col>
@@ -845,8 +912,8 @@ export default {
                                       </b-row>
                                       <b-row class="mb-2">
                                         <b-col sm="4" class="text-right">
-                                          <b>Unit:</b></b-col
-                                        >
+                                          <b>Unit:</b>
+                                        </b-col>
                                         <b-col>{{
                                           propertyRow.item.unit
                                         }}</b-col>
@@ -905,72 +972,157 @@ export default {
                                     </p>
                                   </div>
                                 </b-card-body>
-
-                                <b-card-body
-                                  class="text-muted border"
-                                  v-for="y in propertyRow.item
-                                    .assignmentHistory"
-                                  :key="y.id"
-                                >
-                                  <b class="font-size-16">
-                                    {{
-                                      y.employee.firstName
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                      y.employee.firstName.slice(1)
-                                    }}
-                                    {{
-                                      y.employee.middleName
-                                        ? `${y.employee.middleName
-                                            .charAt(0)
-                                            .toUpperCase()}.`
-                                        : ""
-                                    }}
-                                    {{
-                                      y.employee.lastName
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                      y.employee.lastName.slice(1)
-                                    }}
-                                  </b>
-                                  <div class="font-size-12 mb-1">
-                                    Position:
-                                    <b class="font-size-14">{{
-                                      y.employee.position
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Assignment Type:
-                                    <b class="font-size-14">{{
-                                      y.assignmentType
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Date Assigned:
-                                    <b class="font-size-14">{{
-                                      formatDate(new Date(y.dateAssigned))
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Date Returned:
-                                    <b
-                                      v-if="
-                                        y.dateReturned == '0001-01-01T00:00:00'
-                                      "
-                                      class="font-size-14"
+                                <b-card-body class="text-muted border">
+                                  <ul
+                                    class="
+                                      verti-timeline
+                                      list-unstyled
+                                      ms-4
+                                      mb-4
+                                    "
+                                    v-for="y in propertyRow.item
+                                      .assignmentHistory"
+                                    :key="y.id"
+                                  >
+                                    <li
+                                      class="event-list"
+                                      :class="{
+                                        active: ifCurrent(
+                                          y.id,
+                                          propertyRow.item.currentAssignment
+                                        ),
+                                      }"
                                     >
-                                      N/A
-                                    </b>
-                                    <b v-else class="font-size-14">{{
-                                      formatDate(new Date(y.dateReturned))
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Location:
-                                    <b class="font-size-14">{{
-                                      y.propertyLocation
-                                    }}</b>
-                                  </div>
+                                      <div class="event-timeline-dot">
+                                        <i
+                                          v-if="
+                                            ifCurrent(
+                                              y.id,
+                                              propertyRow.item.currentAssignment
+                                            )
+                                          "
+                                          class="
+                                            bx
+                                            bxs-right-arrow-circle
+                                            font-size-18
+                                            bx-fade-right
+                                          "
+                                        ></i>
+                                        <i
+                                          v-else
+                                          class="
+                                            bx bx-right-arrow-circle
+                                            font-size-18
+                                          "
+                                        ></i>
+                                      </div>
+                                      <div class="media">
+                                        <div
+                                          class="
+                                            d-flex
+                                            justify-content-between
+                                            align-items-top
+                                            ms-4
+                                            me-3
+                                          "
+                                          style="width: 200px"
+                                        >
+                                          <div>
+                                            <div>
+                                              <b class="font-size-16">
+                                                {{
+                                                  y.employee.lastName
+                                                    .charAt(0)
+                                                    .toUpperCase() +
+                                                  y.employee.lastName.slice(1)
+                                                }},
+                                              </b>
+                                            </div>
+                                            <div>
+                                              <b class="font-size-16">
+                                                {{
+                                                  y.employee.firstName
+                                                    .charAt(0)
+                                                    .toUpperCase() +
+                                                  y.employee.firstName.slice(1)
+                                                }}
+                                                {{
+                                                  y.employee.middleName
+                                                    ? `${y.employee.middleName
+                                                        .charAt(0)
+                                                        .toUpperCase()}.`
+                                                    : ""
+                                                }}
+                                              </b>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <i
+                                              class="
+                                                bx bx-right-arrow-alt
+                                                font-size-16
+                                                text-info
+                                                align-middle
+                                                ms-2
+                                              "
+                                            ></i>
+                                          </div>
+                                        </div>
+                                        <div class="media-body">
+                                          <div class="font-size-12 mb-1">
+                                            Assignment Type:
+                                            <b class="font-size-14">{{
+                                              y.assignmentType
+                                            }}</b>
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Date Assigned:
+                                            <b
+                                              class="font-size-14 text-success"
+                                              >{{
+                                                formatDate(
+                                                  new Date(y.dateAssigned)
+                                                )
+                                              }}</b
+                                            >
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Date Returned:
+                                            <b
+                                              v-if="
+                                                y.dateReturned ==
+                                                '0001-01-01T00:00:00'
+                                              "
+                                              class="font-size-14"
+                                            >
+                                              N/A
+                                            </b>
+                                            <b
+                                              v-else
+                                              class="font-size-14 text-danger"
+                                              >{{
+                                                formatDate(
+                                                  new Date(y.dateReturned)
+                                                )
+                                              }}</b
+                                            >
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Location:
+                                            <b class="font-size-14">{{
+                                              y.propertyLocation.location
+                                            }}</b>
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Location Code:
+                                            <b class="font-size-14">{{
+                                              y.propertyLocation.locationCode
+                                            }}</b>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  </ul>
                                 </b-card-body>
                               </b-collapse>
                               <!-- Inspection History -->
@@ -1026,79 +1178,143 @@ export default {
                                     </p>
                                   </div>
                                 </b-card-body>
-
-                                <b-card-body
-                                  class="text-muted border"
-                                  v-for="y in propertyRow.item
-                                    .propertyInspections"
-                                  :key="y.id"
-                                >
-                                  <b class="font-size-16">
-                                    {{
-                                      formatDateWithTime(
-                                        new Date(y.inspectionDateTime)
-                                      )
-                                    }}
-                                  </b>
-                                  <div class="font-size-12 mb-1">
-                                    Property Status:
-                                    <b class="font-size-14">{{
-                                      y.propertyStatus
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Assessed Value:
-                                    <b class="font-size-14">{{
-                                      y.assessedValue
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Inspection Status:
-                                    <b class="font-size-14">{{
-                                      y.inspectionStatus
-                                    }}</b>
-                                  </div>
-                                  <div class="font-size-12 mb-1">
-                                    Inspected By:
-                                    <b v-if="y.employee" class="font-size-14">
-                                      {{
-                                        y.employee.firstName
-                                          .charAt(0)
-                                          .toUpperCase() +
-                                        y.employee.firstName.slice(1)
-                                      }}
-                                      {{
-                                        y.employee.middleName
-                                          ? `${y.employee.middleName
-                                              .charAt(0)
-                                              .toUpperCase()}.`
-                                          : ""
-                                      }}
-                                      {{
-                                        y.employee.lastName
-                                          .charAt(0)
-                                          .toUpperCase() +
-                                        y.employee.lastName.slice(1)
-                                      }}</b
+                                <b-card-body class="text-muted border">
+                                  <ul
+                                    class="
+                                      verti-timeline
+                                      list-unstyled
+                                      ms-4
+                                      mb-4
+                                    "
+                                    v-for="y in propertyRow.item
+                                      .propertyInspections"
+                                    :key="y.id"
+                                  >
+                                    <li
+                                      class="event-list"
+                                      :class="{
+                                        active: y.status == 'PENDING',
+                                      }"
                                     >
-                                    <b v-else class="font-size-14">n/a</b>
-                                  </div>
-                                  <div class="font-size-16 mb-1">
-                                    <span
-                                      v-if="y.status == 'PENDING'"
-                                      class="
-                                        badge
-                                        bg-warning bg-soft
-                                        text-warning
-                                      "
-                                      ><b>{{ y.status }}</b></span
-                                    >
-                                    <span
-                                      v-if="y.status == 'POSTED'"
-                                      class="badge bg-success"
-                                      ><b>{{ y.status }}</b></span
-                                    >
-                                  </div>
+                                      <div class="event-timeline-dot">
+                                        <i
+                                          v-if="y.status == 'PENDING'"
+                                          class="
+                                            bx
+                                            bxs-right-arrow-circle
+                                            font-size-18
+                                            bx-fade-right
+                                          "
+                                        ></i>
+                                        <i
+                                          v-else
+                                          class="
+                                            bx bx-right-arrow-circle
+                                            font-size-18
+                                          "
+                                        ></i>
+                                      </div>
+                                      <div class="media">
+                                        <div
+                                          class="
+                                            d-flex
+                                            justify-content-between
+                                            align-items-center
+                                            ms-4
+                                            me-3
+                                          "
+                                          style="width: 200px"
+                                        >
+                                          <div>
+                                            <b class="font-size-16">
+                                              {{
+                                                formatDate(
+                                                  new Date(y.inspectionDateTime)
+                                                )
+                                              }}
+                                            </b>
+                                          </div>
+                                          <div>
+                                            <i
+                                              class="
+                                                bx bx-right-arrow-alt
+                                                font-size-16
+                                                text-info
+                                                align-middle
+                                                ms-2
+                                              "
+                                            ></i>
+                                          </div>
+                                        </div>
+                                        <div class="media-body">
+                                          <div class="font-size-12 mb-1">
+                                            Property Status:
+                                            <b class="font-size-14">{{
+                                              y.propertyStatus
+                                            }}</b>
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Assessed Value:
+                                            <b class="font-size-14">{{
+                                              y.assessedValue
+                                            }}</b>
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Inspection Status:
+                                            <b class="font-size-14">{{
+                                              y.inspectionStatus
+                                            }}</b>
+                                          </div>
+                                          <div class="font-size-12 mb-1">
+                                            Inspected By:
+                                            <b
+                                              v-if="y.employee"
+                                              class="font-size-14"
+                                            >
+                                              {{
+                                                y.employee.firstName
+                                                  .charAt(0)
+                                                  .toUpperCase() +
+                                                y.employee.firstName.slice(1)
+                                              }}
+                                              {{
+                                                y.employee.middleName
+                                                  ? `${y.employee.middleName
+                                                      .charAt(0)
+                                                      .toUpperCase()}.`
+                                                  : ""
+                                              }}
+                                              {{
+                                                y.employee.lastName
+                                                  .charAt(0)
+                                                  .toUpperCase() +
+                                                y.employee.lastName.slice(1)
+                                              }}</b
+                                            >
+                                            <b v-else class="font-size-14"
+                                              >n/a</b
+                                            >
+                                          </div>
+                                          <div class="font-size-16 mb-1">
+                                            <span
+                                              v-if="y.status == 'PENDING'"
+                                              class="
+                                                badge
+                                                bg-warning bg-soft
+                                                text-warning
+                                              "
+                                              ><b>{{ y.status }}</b></span
+                                            >
+                                            <span
+                                              v-if="y.status == 'POSTED'"
+                                              class="badge bg-success"
+                                              ><b>{{ y.status }}</b></span
+                                            >
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  </ul>
                                 </b-card-body>
                               </b-collapse>
                               <!-- Attachments -->
@@ -1374,15 +1590,15 @@ export default {
                             >
                               <b-pagination
                                 v-model="row.item.currentPage"
-                                :total-rows="propertyRows(row.item.details)"
-                                :per-page="10"
+                                :total-rows="propertyRows(row.item)"
+                                :per-page="5"
                               ></b-pagination>
                             </ul>
                           </div>
                         </div>
                       </div>
                     </b-card>
-                  </transition>
+                  </b-collapse>
                 </template>
               </b-table>
             </div>

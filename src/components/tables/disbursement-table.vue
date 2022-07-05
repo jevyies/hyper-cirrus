@@ -1,8 +1,12 @@
 <script>
+import UploadPopover from "@/components/widgets/upload-popover.vue";
 export default {
   props: {
     records: {},
     type: null,
+  },
+  components: {
+    UploadPopover,
   },
   data() {
     return {
@@ -55,12 +59,19 @@ export default {
           tdClass: "col-md-1",
         },
       ],
+      uploadOptions: {
+        type: "Disbursement",
+        placement: "lefttop",
+        folder: "Finance",
+      },
       alert: {
         show: false,
         type: "",
         message: "",
       },
       tableBusy: false,
+      selectedRecord: {},
+      attachments: [],
     };
   },
   methods: {
@@ -94,6 +105,53 @@ export default {
     },
     printDisbursement(id) {
       this.$emit("printDisbursement", id);
+    },
+    uploadedPosted(response, id) {
+      this.attachments.push(response);
+    },
+    fetchAttachments(record) {
+      this.$store
+        .dispatch("filemanager/GetFiles", { id: record.item.id, type: "Disbursement" })
+        .then((response) => {
+          this.selectedRecord = record.item;
+          this.attachments = response.data;
+          record.item.attachments.push = [...response.data];
+          // this.attachmentModalTitle = `Attachment for ${this.selectedRecord.serialNumber}`;
+          // this.showAttachments = true;
+          record.toggleDetails();
+        })
+        .catch(() => {
+          this.showToast("Something went wrong. Cannot fetch attachments.", "error");
+        });
+    },
+    openDocument(x) {
+      window.open(`${this.$store.state.data.rootFileDirectory}${x.folder}/${x.fileName}`);
+    },
+    removeFile(record) {
+      this.$swal({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#5c636a",
+        confirmButtonText: "Yes, remove it!",
+      }).then((result) => {
+        if (result.value) {
+          this.$store
+            .dispatch("filemanager/DeleteFile", record.id)
+            .then((res) => {
+              if (res.data.error) {
+                return this.showToast(res.data.errorMessage, "error");
+              }
+              this.attachments.splice(this.attachments.indexOf(record), 1);
+              this.showToast("Successfully removed!", "success");
+            })
+            .catch(() => {
+              this.showToast("Cannot be deleted!", "error");
+            });
+        }
+      });
     },
   },
   computed: {
@@ -205,10 +263,24 @@ export default {
                 </p>
               </template>
               <template #cell(details)="row">
-                <a v-b-toggle.collapse-1 href="javascript:void(0)"
-                  ><i class="bx bx-chevron-down"></i> View Details</a
-                >
-                <b-collapse id="collapse-1" class="mt-2">
+                <p class="mb-1">
+                  <a
+                    v-b-toggle="`${row.item.id}`"
+                    href="javascript:void(0)"
+                    class="text-info"
+                    ><i class="bx bxs-file-blank font-size-15"></i> View Details</a
+                  >
+                </p>
+                <p class="mb-0">
+                  <a
+                    href="javascript:void(0)"
+                    @click="fetchAttachments(row)"
+                    class="text-warning"
+                    ><i class="bx bx-paperclip font-size-15"></i> Attachments</a
+                  >
+                </p>
+
+                <b-collapse :id="`collapse-${row.item.id}`" class="mt-2">
                   <b-card>
                     <p class="card-text">Disbursement Details</p>
                     <hr />
@@ -322,6 +394,90 @@ export default {
                     ><i class="bx bx-trash me-2"></i> Delete</b-dropdown-item
                   >
                 </b-dropdown>
+              </template>
+              <template #row-details="row">
+                <b-card>
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <h5 class="card-title mt-2">
+                        <i class="bx bx-paperclip"></i>Attachments
+                      </h5>
+                    </div>
+                    <div class="col-lg-6 text-lg-end">
+                      <b-button
+                        variant="success"
+                        @click="row.item.viewUpload = true"
+                        :id="`burs-document${row.item.id}`"
+                        ><i class="bx bx-upload align-middle me-1"></i> Upload</b-button
+                      >
+                      <upload-popover
+                        :option="uploadOptions"
+                        :sourceId="row.item.id"
+                        @uploaded="uploadedPosted($event, row.item.id)"
+                        :showPV="row.item.viewUpload"
+                        @closePopover="row.item.viewUpload = !row.item.viewUpload"
+                        :dzId="`dropzone-posted${row.item.id}`"
+                        :pvId="`burs-document${row.item.id}`"
+                      ></upload-popover>
+                    </div>
+                  </div>
+                  <div class="mb-0 mt-5">
+                    <b-row>
+                      <b-col sm="4" v-for="y in attachments" :key="y.id" class="mb-2">
+                        <div class="position-relative cursor-pointer">
+                          <div class="border p-3">
+                            <div>
+                              <div class="float-end ms-2">
+                                <b-dropdown
+                                  id="dropdown-dropleft"
+                                  right
+                                  variant="link"
+                                  toggle-class="text-decoration-none text-dark font-size-16 pt-0"
+                                  menu-class="dropdown-menu-end"
+                                  no-caret
+                                >
+                                  <template #button-content>
+                                    <i class="mdi mdi-dots-horizontal"></i>
+                                  </template>
+                                  <b-dropdown-item @click="openDocument(y)"
+                                    ><i class="bx bx-link-external me-1"></i
+                                    >Open</b-dropdown-item
+                                  >
+                                  <b-dropdown-item variant="danger" @click="removeFile(y)"
+                                    ><i class="bx bx-trash me-1"></i
+                                    >Remove</b-dropdown-item
+                                  >
+                                </b-dropdown>
+                              </div>
+                              <div class="avatar-xs me-3 mb-2" @click="openDocument(y)">
+                                <div class="avatar-title bg-transparent rounded">
+                                  <i
+                                    v-if="y.fileType.includes('image')"
+                                    class="mdi mdi-image font-size-24 text-purple"
+                                  ></i>
+                                  <i
+                                    v-if="y.fileType.includes('application')"
+                                    class="mdi mdi-file-pdf-outline font-size-24 text-danger"
+                                  ></i>
+                                </div>
+                              </div>
+                              <div class="d-flex" @click="openDocument(y)">
+                                <div class="overflow-hidden me-auto">
+                                  <h5 class="font-size-14 text-truncate mb-1">
+                                    {{ y.description }}
+                                  </h5>
+                                  <p class="text-muted mb-0">
+                                    {{ formatDateWithTime(new Date(y.dateTimeUploaded)) }}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </b-col>
+                    </b-row>
+                  </div>
+                </b-card>
               </template>
             </b-table>
           </div>

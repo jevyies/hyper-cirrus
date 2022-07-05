@@ -1,6 +1,8 @@
 import Vue from "vue";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
+import VueCryptojs from 'vue-cryptojs'
+import store from "@/state/store";
 
 const toastOpt = {
   transition: "Vue-Toastification__bounce",
@@ -8,6 +10,8 @@ const toastOpt = {
   newestOnTop: true,
 };
 Vue.use(Toast, toastOpt);
+Vue.use(VueCryptojs);
+
 Vue.prototype.formatDate = function(dt) {
   if (dt == null) return "";
   let ye = new Intl.DateTimeFormat("en", { year: "numeric" }).format(dt);
@@ -94,3 +98,18 @@ Vue.prototype.showToast = (message, type) => {
 Vue.prototype.numberWithCommas = (x) => {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
+Vue.prototype.decryptedUserData = (encryptedText) => {
+  var rawData = Vue.CryptoJS.enc.Base64.parse(encryptedText);
+  var key = Vue.CryptoJS.enc.Latin1.parse(store.state.data.decipherCode);
+  var plaintextData = Vue.CryptoJS.AES.decrypt(
+      { ciphertext: rawData },
+      key,
+      {
+          iv: Vue.CryptoJS.enc.Latin1.parse(
+              ""
+          ),
+      }
+  );
+  var plaintext = plaintextData.toString(Vue.CryptoJS.enc.Latin1);
+  return JSON.parse(plaintext)
+}

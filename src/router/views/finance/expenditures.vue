@@ -262,18 +262,8 @@ export default {
       this.tableBusy = false;
     },
     addNew(id) {
-      // this.listOverlay = true;
-      // if (!this.selectedPrexc || !this.selectedFS) {
-      //   this.listOverlay = false;
-      //   this.$swal({
-      //     title: "Cannot Proceed",
-      //     text:
-      //       "Please select PREXC and Fund Source before adding new object of expenditures",
-      //     icon: "error",
-      //   });
-      //   return;
-      // }
       this.selectedPrexcId = id;
+      this.addModal = true;
       this.$store
         .dispatch("objectOfExpenditures/getAvailableAccount", {
           cycle: Number(this.cycle),
@@ -294,9 +284,9 @@ export default {
             })),
           }));
           // this.listOverlay = false;
-          this.addModal = true;
         })
         .catch((e) => {
+          this.addModal = false;
           this.showToast("Something went wrong. Cannot fetch available PREXCs", "error");
           // this.alert = {
           //   show: true,
@@ -590,30 +580,6 @@ export default {
                         ></b-form-select>
                       </b-form-group>
                     </div>
-                    <!-- <div class="col-md-3">
-                      <b-form-group
-                        label="Outcomes"
-                        class="mt-3"
-                        v-if="outcomes.length > 0"
-                      >
-                        <b-form-select
-                          v-model="selectedOutcome"
-                          :options="outcomes"
-                          class="form-select form-select-sm"
-                          @change="processOutcome"
-                        ></b-form-select>
-                      </b-form-group>
-                    </div> -->
-                    <!-- <div class="col-md-3">
-                      <b-form-group label="Prexc" class="mt-3" v-if="prexc.length > 0">
-                        <b-form-select
-                          v-model="selected"
-                          :options="prexc"
-                          class="form-select form-select-sm"
-                          @change="processPREXC"
-                        ></b-form-select>
-                      </b-form-group>
-                    </div> -->
                   </div>
                 </b-card>
               </b-overlay>
@@ -647,123 +613,38 @@ export default {
                 )
               </p>
               <!-- Table here -->
-              <div class="mb-0">
-                <!-- <b-table
-                  class="table project-list-table align-middle table-borderless"
-                  :items="outcomes"
-                  :fields="fields"
-                  :per-page="perPage"
-                  :current-page="currentPage"
-                  :sort-by.sync="sortBy"
-                  :sort-desc.sync="sortDesc"
-                  :filter="filter"
-                  :filter-included-fields="filterOn"
-                  :busy="tableBusy"
-                  @filtered="onFiltered"
-                  show-empty
-                >
-                  <template #empty="scope">
-                    <div class="text-center">{{ scope.emptyText }}</div>
-                  </template>
-                  <template #table-busy>
-                    <div class="d-flex justify-content-center align-items-center">
-                      <div class="preloader-component me-2">
-                        <div class="status">
-                          <div class="spinner-chase w-20px h-20px">
-                            <div class="chase-dot"></div>
-                            <div class="chase-dot"></div>
-                            <div class="chase-dot"></div>
-                            <div class="chase-dot"></div>
-                            <div class="chase-dot"></div>
-                            <div class="chase-dot"></div>
-                          </div>
-                        </div>
-                      </div>
-                      <strong>Loading...</strong>
-                    </div>
-                  </template>
-                  <template #cell(outcomeName)="row">
-                    <span class="d-inline-block me-4"
-                      ><i
+              <div
+                class="card border border-light mb-2"
+                v-for="outcome in outcomes"
+                :key="outcome.id"
+              >
+                <div class="card-body">
+                  <div class="d-flex justify-content-start">
+                    <div class="me-3">
+                      <i
                         class="bx bx-chevron-right rotate font-size-16 cursor-pointer"
                         :class="{
-                          'rotate-90': row.item.rotateChevy,
+                          'rotate-90': outcome.rotateChevy,
                         }"
-                      ></i
-                    ></span>
-
-                    <span class="d-inline-block text-truncate" style="max-width: 950%">
-                      {{ row.item.outcomeName }}
-                    </span>
-                  </template> -->
-
-                <!-- <template #cell(actions)="row">
-                    <div class="float-end" v-if="checkExpiry(selectedFS.expiry)">
-                      <b-dropdown
-                        id="dropdown-dropleft"
-                        right
-                        variant="link"
-                        toggle-class="text-decoration-none"
-                        menu-class="dropdown-menu-end"
-                        no-caret
-                      >
-                        <template #button-content>
-                          <i class="fas fa-ellipsis-v"></i>
-                        </template>
-                        <b-dropdown-item
-                          @click="viewTransactions(row)"
-                          variant="secondary"
-                          ><i class="mdi mdi-format-list-checks font-size-18 me-1"></i
-                          >View Transactions</b-dropdown-item
-                        >
-                        <b-dropdown-item @click="deleteItem(row)" variant="danger"
-                          ><i class="mdi mdi-trash-can font-size-18 me-1"></i
-                          >Delete</b-dropdown-item
-                        >
-                      </b-dropdown>
+                        @click="showDtls(outcome)"
+                        v-b-toggle="`collapse-${outcome.id}`"
+                      ></i>
                     </div>
-                  </template> -->
-                <!-- </b-table> -->
-              </div>
-              <div class="mb-2" v-for="outcome in outcomes" :key="outcome.id">
-                <div class="card border border-light mb-0">
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-1 text-center ps-0 pe-0">
-                        <i
-                          class="bx bx-chevron-right rotate font-size-16 cursor-pointer"
-                          :class="{
-                            'rotate-90': outcome.rotateChevy,
-                          }"
-                          @click="showDtls(outcome)"
-                          v-b-toggle="`collapse-${outcome.id}`"
-                        ></i>
-                      </div>
-                      <div class="col-md-11 ps-0">
-                        {{ outcome.outcomeName }}
-                      </div>
-                    </div>
-                    <b-collapse :id="`collapse-${outcome.id}`" accordion="my-accordion">
-                      <div class="row">
-                        <div class="col-lg-1">&nbsp;</div>
-                        <div class="col-lg-11">
-                          <Prexcs
-                            :cycle="cycle"
-                            :fundSource="selectedFS ? selectedFS.id : null"
-                            v-if="prexc"
-                            :prexcs="prexc"
-                            class="mt-5"
-                            @viewTransactions="viewTransactions"
-                            @deleteItem="deleteItem"
-                            @addNew="addNew"
-                          />
-                        </div>
-                      </div>
-                      <!-- Display All Prexc here -->
-
-                      <!-- Display All Prexc here -->
-                    </b-collapse>
+                    <p class="mb-0">{{ outcome.outcomeName }}</p>
                   </div>
+                  <b-collapse :id="`collapse-${outcome.id}`" accordion="my-accordion">
+                    <div class="wrapper p-0 m-0">
+                      <Prexcs
+                        :cycle="cycle"
+                        :fundSource="selectedFS ? selectedFS.id : null"
+                        :prexcs="prexc"
+                        class="mt-5"
+                        @viewTransactions="viewTransactions"
+                        @deleteItem="deleteItem"
+                        @addNew="addNew"
+                      />
+                    </div>
+                  </b-collapse>
                 </div>
               </div>
               <div class="row">
@@ -787,7 +668,25 @@ export default {
     </div>
     <!-- Modals here -->
     <b-modal v-model="addModal" size="lg" title="Select accounts" no-close-on-backdrop>
-      <div class="row">
+      <div
+        class="d-flex justify-content-center align-items-center"
+        v-if="!availablePrexc"
+      >
+        <div class="preloader-component me-2">
+          <div class="status">
+            <div class="spinner-chase w-20px h-20px">
+              <div class="chase-dot"></div>
+              <div class="chase-dot"></div>
+              <div class="chase-dot"></div>
+              <div class="chase-dot"></div>
+              <div class="chase-dot"></div>
+              <div class="chase-dot"></div>
+            </div>
+          </div>
+        </div>
+        <strong>Loading...</strong>
+      </div>
+      <div class="row" v-else>
         <treeselect
           :multiple="true"
           :options="availablePrexc"
@@ -835,5 +734,8 @@ export default {
 }
 .vue-treeselect__option--highlight {
   background-color: #2a3042;
+}
+.vue-treeselect__input {
+  color: #fff;
 }
 </style>

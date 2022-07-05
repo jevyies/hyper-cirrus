@@ -88,7 +88,9 @@ export default {
       record: {
         deliveryUnitId: null,
         objectOfExpenditureId: null,
-        expiry: Date.parse(new Date(new Date().getFullYear(), 11, 31)),
+        expiry: Date.parse(
+          new Date(Number(this.$store.getters["data/getCycle"]), 11, 31)
+        ),
         isExclusive: false,
         forCharging: false,
       },
@@ -140,7 +142,6 @@ export default {
   },
   async created() {
     /** Retrieve all campus and map to select */
-
     const { data } = await this.$store.dispatch("campus/GetCampus");
     this.campus = data.map((item) => {
       return {
@@ -416,6 +417,9 @@ export default {
       // this.pendingOfficeBudgetItems = filter(this.officeBudgetItems, ["status", startCase("pending")]);
     },
     async changeCycle(cycle) {
+      this.record.expiry = Date.parse(
+        new Date(Number(this.$store.getters["data/getCycle"]), 11, 31)
+      );
       if (this.selectedOffice) {
         const item = {
           id: this.selectedOffice.id,
@@ -616,11 +620,15 @@ export default {
         .dispatch("officebudgetitem/createMultipleDeliveryUnitBudgetItem", record)
         .then(async (response) => {
           if (response.data.error) {
-            this.alert = {
-              show: true,
-              variant: "danger",
-              message: `Cannot proceed to save. ${response.data.errorMessage}. Please contact your administrator`,
-            };
+            this.showToast(
+              `Cannot proceed to save. ${response.data.errorMessage}. Please contact your administrator`,
+              "error"
+            );
+            // this.alert = {
+            //   show: true,
+            //   variant: "danger",
+            //   message: `Cannot proceed to save. ${response.data.errorMessage}. Please contact your administrator`,
+            // };
             return;
           }
 
@@ -637,21 +645,26 @@ export default {
           this.selectedPrexc = null;
           this.bulkBudgetModal = false;
           this.overlay = false;
-          this.alert = {
-            show: true,
-            variant: "success",
-            message: "Budget successfully created",
-          };
+          this.showToast("Budget successfully created", "success");
+          // this.alert = {
+          //   show: true,
+          //   variant: "success",
+          //   message: "Budget successfully created",
+          // };
         })
         .catch(() => {
           this.overlay = false;
           this.bulkBudgetModal = false;
-          this.alert = {
-            show: true,
-            variant: "danger",
-            message:
-              "Oops. Something went wrong. Cannot add budget items to delivery unit. Please contact your administrator",
-          };
+          this.showToast(
+            "Oops. Something went wrong. Cannot add budget items to delivery unit. Please contact your administrator",
+            "error"
+          );
+          // this.alert = {
+          //   show: true,
+          //   variant: "danger",
+          //   message:
+          //     "Oops. Something went wrong. Cannot add budget items to delivery unit. Please contact your administrator",
+          // };
         });
     },
     multipleOffices() {
@@ -872,7 +885,7 @@ export default {
             </div>
           </div>
           <div class="mb-3">
-            <label>Expiry Date:</label>
+            <label>Expiry Date</label>
             <date-picker
               :first-day-of-week="1"
               lang="en"
@@ -888,14 +901,8 @@ export default {
             </div>
           </div>
           <div class="mb-3">
-            <label>Amount:</label>
-            <!-- <b-form-input
-              class="form-control"
-              v-model.number="transaction.amount"
-              :class="{
-                'is-invalid': submitted && $v.transaction.amount.$error,
-              }"
-            ></b-form-input> -->.
+            <label>Amount</label>
+
             <masked-input
               autocomplete="off"
               type="text"
@@ -918,7 +925,7 @@ export default {
             </div>
           </div>
           <div class="mb-3">
-            <label>Description:</label>
+            <label>Description</label>
             <b-form-input
               class="form-control"
               v-model="transaction.description"
@@ -1044,7 +1051,7 @@ export default {
                   <th>UACS</th>
                   <th>Expenditure/Account</th>
                   <th>Exclusive?</th>
-                  <th>For Charging</th>
+                  <th>Centrally-Managed Item</th>
                   <th class="text-center">Expiry</th>
                   <th>Action</th>
                 </tr>
@@ -1169,7 +1176,7 @@ export default {
           >
         </div>
       </div>
-      <div class="row">
+      <div class="row" v-if="selectedDUOE.status.toLowerCase() !== 'posted'">
         <div class="col-md-12">
           <b-form-checkbox v-model="updateExpenditure.isExclusive" switch>
             <span class="ms-3"
@@ -1351,6 +1358,7 @@ export default {
                 <div class="col-md-12">
                   <!-- Budget Items List -->
                   <!-- <b-card> -->
+
                   <OfficeBudgetTable
                     :budgetline="officeBudgetItems"
                     :isPosted="false"
@@ -1359,6 +1367,7 @@ export default {
                     @delete="deleteBudgetItem"
                     @update="updateBudgetItem"
                   ></OfficeBudgetTable>
+
                   <!-- </b-card> -->
                 </div>
               </div>

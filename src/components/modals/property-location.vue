@@ -27,10 +27,10 @@ export default {
           key: "locationCode",
           sortable: true,
         },
-        {
-          key: "actions",
-          thStyle: { width: "90px" },
-        },
+        // {
+        //   key: "actions",
+        //   thStyle: { width: "90px" },
+        // },
       ],
       form: {
         id: 0,
@@ -238,7 +238,7 @@ export default {
         </div>
       </div>
       <!-- Search -->
-      <div class="col-sm-12 col-md-6">
+      <!-- <div class="col-sm-12 col-md-6">
         <div class="d-flex justify-content-end align-items-center">
           <button
             type="button"
@@ -341,7 +341,7 @@ export default {
             </form>
           </b-modal>
         </div>
-      </div>
+      </div> -->
       <!-- End search -->
     </div>
     <div class="table-responsive mb-0">

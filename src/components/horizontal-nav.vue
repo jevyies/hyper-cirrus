@@ -90,7 +90,7 @@ export default {
             <!-- Menu data -->
 
             <template v-for="(item, index) of menuItems">
-              <li class="nav-item dropdown" :key="index">
+              <li class="nav-item dropdown" :key="index" v-if="item.display">
                 <router-link
                   class="nav-link dropdown-toggle arrow-none"
                   v-if="!item.subItems"
@@ -123,7 +123,7 @@ export default {
                     <router-link
                       class="col dropdown-item side-nav-link-ref"
                       :key="index"
-                      v-if="!hasItems(subitem)"
+                      v-if="!hasItems(subitem) && subitem.display"
                       :to="subitem.link"
                       >{{ subitem.label }}</router-link
                     >

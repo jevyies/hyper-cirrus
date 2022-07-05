@@ -84,7 +84,7 @@ export default {
       this.cycle = cycle;
       this.disbursement.cycle = Number(cycle);
       this.fetchPosted();
-      this.fetchApproved();
+      // this.fetchApproved();
       this.fetchPending();
       this.fetchBurs();
       this.fetchAvailable();
@@ -364,6 +364,11 @@ export default {
         .dispatch("disbursement/getPostedDisbursements", this.cycle)
         .then((response) => {
           this.posted = response.data;
+          this.posted = this.posted.map((item) => ({
+            ...item,
+            viewUpload: false,
+            attachments: [],
+          }));
         })
         .catch(() => {
           this.$swal({
@@ -391,6 +396,11 @@ export default {
         .dispatch("disbursement/getPendingDisbursements", this.cycle)
         .then((response) => {
           this.pendings = response.data;
+          this.pendings = this.pendings.map((item) => ({
+            ...item,
+            viewUpload: false,
+            attachments: [],
+          }));
         })
         .catch(() => {
           this.$swal({
@@ -488,7 +498,7 @@ export default {
   },
   created() {
     this.fetchPosted();
-    this.fetchApproved();
+    // this.fetchApproved();
     this.fetchPending();
     this.fetchBurs();
     this.fetchAccounts();
@@ -549,7 +559,7 @@ export default {
           type="posted"
         />
       </b-tab>
-      <b-tab>
+      <!-- <b-tab>
         <template v-slot:title>
           <span class="d-inline-block d-sm-none">
             <i class="bx bx-home"></i>
@@ -561,7 +571,7 @@ export default {
           type="approved"
           @printDisbursement="printDisbursement"
         />
-      </b-tab>
+      </b-tab> -->
     </b-tabs>
 
     <!-- Modals -->

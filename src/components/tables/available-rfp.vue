@@ -15,41 +15,42 @@ export default {
       sortDesc: false,
       fields: [
         {
-          key: "id",
+          key: "action",
+          label: " ",
           sortable: true,
-          tdClass: "col-md-1",
+          thStyle: { width: "3%" },
         },
         {
           key: "rfpNumber",
           sortable: true,
-          tdClass: "col-md-1",
+          thStyle: { width: "10%" },
         },
         {
           key: "type",
           sortable: true,
-          tdClass: "col-md-1",
+          thStyle: { width: "10%" },
         },
         {
           key: "payee",
           label: "Payee/Supplier",
           sortable: true,
-          tdClass: "col-md-2",
+          thStyle: { width: "15%" },
         },
         {
           key: "rfpDate",
           label: "RFP Date",
           sortable: true,
-          tdClass: "col-md-1",
+          thStyle: { width: "15%" },
         },
         {
-          key: "details",
-          label: "Details",
+          key: "amount",
+          label: "Amount",
           sortable: true,
-          tdClass: "col-md-4",
+          thStyle: { width: "15%" },
         },
         {
           key: "actions",
-          tdClass: "col-md-2",
+          thStyle: { width: "5%" },
         },
       ],
       alert: {
@@ -58,6 +59,7 @@ export default {
         message: "",
       },
       tableBusy: false,
+      payments: [],
     };
   },
   methods: {
@@ -77,11 +79,24 @@ export default {
     createBurs(record) {
       this.$emit("create", record);
     },
+    showDtls(row) {
+      row.item.rotateChevy = !row.item.rotateChevy;
+      if (row.item.showDetails) {
+        row.toggleDetails();
+        row.item.showDetails = !row.item.showDetails;
+      } else {
+        row.toggleDetails();
+        row.item.showDetails = !row.item.showDetails;
+      }
+    },
   },
   computed: {
     rows() {
       return this.records.length;
     },
+  },
+  created() {
+    this.payments = this.records.filter((item) => item.type.toLowerCase() === this.type);
   },
 };
 </script>
@@ -163,46 +178,113 @@ export default {
                   <strong>Loading...</strong>
                 </div>
               </template>
+              <template #cell(action)="row">
+                <div
+                  class="d-flex align-items-center justify-content-center"
+                  @click="showDtls(row)"
+                >
+                  <i
+                    class="bx bx-chevron-right rotate font-size-16 cursor-pointer"
+                    :class="{
+                      'rotate-90': row.item.rotateChevy,
+                    }"
+                  ></i>
+                </div>
+              </template>
               <template #cell(payee)="row">
                 <p class="mb-0 text-info">
-                  {{ row.item.rfpPaymentItem.rfp.supplier.name }}
+                  {{ row.item.supplier.name }}
                 </p>
                 <p class="mb-0">
-                  <small>TIN: {{ row.item.rfpPaymentItem.rfp.supplier.tin }}</small>
-                </p>
-                <p class="mb-0">
-                  <small>{{ row.item.rfpPaymentItem.rfp.supplier.vatType }}</small>
+                  <small>TIN: {{ row.item.supplier.tin }}</small>
+                  <i v-if="row.item.supplier.vatType">
+                    - <small>{{ row.item.supplier.vatType }}</small></i
+                  >
                 </p>
               </template>
-              <template #cell(details)="row">
-                <a v-b-toggle="`collapse-${row.item.id}`" href="javascript:void(0)"
-                  ><i class="bx bx-chevron-down"></i> View Details</a
-                >
-                <b-collapse :id="`collapse-${row.item.id}`" class="mt-2">
-                  <b-card>
-                    <p class="card-text">RFP Details</p>
-                    <hr />
+              <template #row-details="row">
+                <transition>
+                  <b-card v-if="row.item.showDetails">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <h5 class="card-title mb-3">Details</h5>
 
-                    <p class="mb-2">
-                      <strong>Payee: </strong>
-                      <span>{{ row.item.rfpPaymentItem.rfp.payee }}</span>
-                    </p>
-                    <p class="mb-2">
-                      <strong>Amount: </strong>
-                      <span>{{ formatCurrency(row.item.amount) }}</span>
-                    </p>
-                    <p class="mb-2">
-                      <strong>Particulars: </strong>
-                      <span>{{ row.item.rfpPaymentItem.rfp.particulars }}</span>
-                    </p>
-                    <p class="mb-2">
-                      <strong>Delivery Unit: </strong>
-                      <span>{{
-                        row.item.rfpPaymentItem.deliveryUnitBudgetItem.deliveryUnit.name
-                      }}</span>
-                    </p>
+                        <p class="mb-2">
+                          <strong>Payee: </strong>
+                          <span>{{ row.item.payee }}</span>
+                        </p>
+                        <p class="mb-2">
+                          <strong>Amount: </strong>
+                          <span class="text-warning">{{
+                            formatCurrency(row.item.amount)
+                          }}</span>
+                        </p>
+                        <p class="mb-2">
+                          <strong>Particulars: </strong>
+                          <span>{{ row.item.particulars }}</span>
+                        </p>
+                        <p class="mb-2" v-if="row.item.type.toLowerCase() === 'payment'">
+                          <strong>Delivery Unit: </strong>
+                          <span>{{
+                            row.item.rfpPaymentItem.deliveryUnitBudgetItem.deliveryUnit
+                              .name
+                          }}</span>
+                        </p>
+                      </div>
+                      <div v-if="row.item.type.toLowerCase() === 'po'" class="col-md-4">
+                        <h5 class="card-title mb-3">Purchase Order Details</h5>
+
+                        <p class="mb-1">
+                          <strong>PO No. </strong
+                          ><span>{{ row.item.rfpPoItems[0].iar.po.poNumber }}</span>
+                        </p>
+                        <p class="mb-1">
+                          <strong>Description: </strong
+                          ><span>{{ row.item.rfpPoItems[0].iar.po.description }}</span>
+                        </p>
+                        <p class="mb-1">
+                          <strong>Date Receieved: </strong
+                          ><span>{{
+                            formatDate(row.item.rfpPoItems[0].iar.po.poDateReceived)
+                          }}</span>
+                        </p>
+                      </div>
+                      <div v-if="row.item.type.toLowerCase() === 'po'" class="col-md-4">
+                        <h5 class="card-title mb-3">IAR Details</h5>
+
+                        <p class="mb-1">
+                          <strong>IAR No: </strong
+                          ><span>{{ row.item.rfpPoItems[0].iar.iarNumber }}</span>
+                        </p>
+                        <p class="mb-1">
+                          <strong>Delivery Receipt No: </strong
+                          ><span>{{ row.item.rfpPoItems[0].iar.drNumber }}</span>
+                        </p>
+                        <p class="mb-1">
+                          <strong>Delivery Date: </strong
+                          ><span>{{
+                            formatDate(row.item.rfpPoItems[0].iar.dateOfDelivery)
+                          }}</span>
+                        </p>
+                        <p class="mb-1">
+                          <strong>Inspection Date: </strong
+                          ><span>{{
+                            formatDate(row.item.rfpPoItems[0].iar.dateInspected)
+                          }}</span>
+                        </p>
+                        <p class="mb-2">
+                          <strong>Amount: </strong
+                          ><span class="text-warning">{{
+                            formatCurrency(row.item.rfpPoItems[0].amount)
+                          }}</span>
+                        </p>
+                      </div>
+                    </div>
                   </b-card>
-                </b-collapse>
+                </transition>
+              </template>
+              <template #cell(amount)="row">
+                <span class="text-warning">{{ formatCurrency(row.item.amount) }}</span>
               </template>
               <template #cell(rfpDate)="row">
                 {{ formatDate(row.item.rfpDate) }}

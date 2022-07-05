@@ -527,6 +527,7 @@ tr.check-months td:last-child {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 2000;
   width: 100%;
+  backdrop-filter: blur(1px);
 }
 .w-10 {
   width: 10%;
@@ -1035,4 +1036,14 @@ select:disabled.no-arrow::-ms-expand {
 }
 input.is-invalid{
   border: 3px solid var(--bs-danger) !important;
+}
+.access-form-input{
+  background-color: transparent;
+  color: #fff;
+  outline: none;
+  border: 1px dashed #314b5f;
+  padding: 2px 5px;
+}
+.access-form-input::placeholder{
+  color: #f9f9f9;
 }

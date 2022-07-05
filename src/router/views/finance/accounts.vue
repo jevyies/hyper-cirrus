@@ -56,10 +56,10 @@ export default {
       sortBy: "accountName",
       sortDesc: false,
       fields: [
-        {
-          key: "id",
-          sortable: true,
-        },
+        // {
+        //   key: "id",
+        //   sortable: true,
+        // },
         {
           key: "uacs",
           label: "UACS",

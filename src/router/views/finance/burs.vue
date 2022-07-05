@@ -70,7 +70,7 @@ export default {
       this.fetchPosted();
       // this.fetchApproved();
       this.fetchPending();
-      this.fetchRfp();
+      // this.fetchRfp();
       this.fetchAvailable();
     },
     formatDate(data) {
@@ -86,7 +86,7 @@ export default {
     },
 
     selectRfp(id) {
-      this.selectedRfp = this.rfp.find((rfp) => rfp.id == id);
+      this.selectedRfp = this.incoming.find((rfp) => rfp.id == id);
     },
 
     formatCurrency(data) {
@@ -341,6 +341,9 @@ export default {
           this.posted = this.posted.map((record) => ({
             ...record,
             viewUpload: false,
+            attachments: [],
+            rotateChevy: false,
+            showDetails: false,
           }));
         })
         .catch(() => {
@@ -355,6 +358,13 @@ export default {
         .dispatch("burs/getPendingBurs", this.cycle)
         .then((response) => {
           this.pendings = response.data;
+          this.pendings = this.pendings.map((record) => ({
+            ...record,
+            viewUpload: false,
+            attachments: [],
+            rotateChevy: false,
+            showDetails: false,
+          }));
         })
         .catch(() => {
           this.$swal({
@@ -363,32 +373,17 @@ export default {
           });
         });
     },
-    fetchRfp() {
-      this.$store
-        .dispatch("rfppayment/getAllPosted", this.cycle)
-        .then((response) => {
-          this.rfp = JSON.parse(JSON.stringify(response.data));
-          this.rfpOptions = response.data.map((item) => ({
-            value: item.id,
-            text: `${item.rfpNumber} - ${item.rfpPaymentItem.deliveryUnitBudgetItem.objectOfExpenditure.account.accountName}`,
-          }));
-          this.rfpOptions.unshift({
-            value: null,
-            text: "Select RFP...",
-          });
-        })
-        .catch(() => {
-          this.$swal({
-            icon: "error",
-            text: "Cannot fetch posted RFP. Please contact your administrator",
-          });
-        });
-    },
     fetchAvailable() {
       this.$store
         .dispatch("burs/getAvailable", this.cycle)
         .then((response) => {
-          this.incoming = response.data;
+          this.incoming = response.data.map((item) => ({
+            ...item,
+            rotateChevy: false,
+            showDetails: false,
+          }));
+          console.log(this.incoming);
+          // console.log(this.incoming.filter((item) => item.type.toLowerCase() === "po"));
         })
         .catch(() => {
           this.$swal({
@@ -407,11 +402,12 @@ export default {
     },
   },
   created() {
+    this.fetchAvailable();
+    this.fetchPending();
     this.fetchPosted();
     // this.fetchApproved();
-    this.fetchPending();
-    this.fetchRfp();
-    this.fetchAvailable();
+
+    // this.fetchRfp();
   },
   validations: {
     burs: {
@@ -431,7 +427,12 @@ export default {
           </span>
           <span class="d-none d-sm-inline-block">Incoming</span>
         </template>
-        <AvailableRFP :records="incoming" @create="createBurs" />
+        <AvailableRFP
+          v-if="incoming.length > 0"
+          :records="incoming"
+          type="payment"
+          @create="createBurs"
+        />
       </b-tab>
       <b-tab>
         <template v-slot:title>
@@ -492,7 +493,7 @@ export default {
         </div>
         <div class="card-body py-0" v-if="selectedRfp">
           <div class="card-text">
-            <div class="row">
+            <div class="row pb-3">
               <div class="col-lg-6">
                 <p class="mb-1">
                   <span>RFP Number: </span
@@ -522,18 +523,34 @@ export default {
                 </p>
               </div>
               <div class="col-lg-6">
-                <p>
+                <p class="mb-1">
                   <span>Account: </span
-                  ><span class="text-warning">{{
-                    selectedRfp.rfpPaymentItem.deliveryUnitBudgetItem.objectOfExpenditure
-                      .account.accountName
-                  }}</span>
+                  ><span
+                    class="text-warning"
+                    v-if="selectedRfp.type.toLowerCase() === 'payment'"
+                    >{{
+                      selectedRfp.rfpPaymentItem.deliveryUnitBudgetItem
+                        .objectOfExpenditure.account.accountName
+                    }}</span
+                  >
                 </p>
               </div>
               <div class="col-lg-6">
-                <p>
+                <p class="mb-1">
                   <span>Particulars: </span
                   ><span class="text-warning">{{ selectedRfp.particulars }}</span>
+                </p>
+              </div>
+              <div class="col-lg-6" v-if="selectedRfp.type.toLowerCase() === 'payment'">
+                <p>
+                  <span>Delivery Unit: </span
+                  ><span
+                    class="text-warning"
+                    v-if="selectedRfp.type.toLowerCase() === 'payment'"
+                    >{{
+                      selectedRfp.rfpPaymentItem.deliveryUnitBudgetItem.deliveryUnit.name
+                    }}</span
+                  >
                 </p>
               </div>
             </div>

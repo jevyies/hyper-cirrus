@@ -1,5 +1,5 @@
 import store from "@/state/store";
-
+let userAccess = localStorage.getItem('userAccess') ? store.state.decrypt.userAccessList() : [];
 export default [
   {
     path: "/",
@@ -75,7 +75,8 @@ export default [
         localStorage.removeItem("cycle");
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("auth.currentUser");
+        localStorage.removeItem("roles");
+        localStorage.removeItem("userAccess");
         const authRequiredOnPreviousRoute = routeFrom.matched.some((route) =>
           route.push("/login")
         );
@@ -152,7 +153,16 @@ export default [
   {
     path: "/administration/agency",
     name: "agency",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "agency" && x.AccessList.Type.toLowerCase() === "administration")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/administration/agency"),
   },
   {
@@ -176,13 +186,21 @@ export default [
   {
     path: "/administration/department/:id",
     name: "department",
-    meta: { authRequired: true },
     component: () => import("./views/administration/department"),
   },
   {
     path: "/administration/employees",
     name: "employees",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "employees" && x.AccessList.Type.toLowerCase() === "administration")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/administration/employees"),
   },
   {
@@ -206,7 +224,16 @@ export default [
   {
     path: "/planning/indicator",
     name: "indicator",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "kpi list" && x.AccessList.Type.toLowerCase() === "delivery unit")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/indicator"),
   },
   {
@@ -218,85 +245,211 @@ export default [
   {
     path: "/planning/api/:id",
     name: "api",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      // beforeResolve(routeTo, routeFrom, next) {
+      //   if (userAccess.find((x) => x.AccessList.Access === "OPCR" && x.AccessList.Type.toLowerCase() === "Delivery Unit")) {
+      //     next();
+      //   } else {
+      //     next({ name: "404" });
+      //   }
+      // },
+    },
     component: () => import("./views/planning/api"),
   },
   {
     path: "/office/targets",
     name: "myTarget",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "target" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/targets"),
   },
   {
     path: "/office/api",
     name: "myAPI",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "opcr" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/api"),
   },
   {
     path: "/office/budget-item",
     name: "myBudgetItemResources",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "resources" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/office-budget-item"),
   },
   {
     path: "/office/for-charging",
     name: "myBudgetItemForCharging",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "for charging" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/for-charging"),
   },
   {
     path: "/office/pr",
     name: "pr",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "purchase request" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/pr"),
   },
   {
     path: "/office/department-allocation",
     name: "myDepartmentAllocation",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "department allocation" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/office/department-allocation"),
   },
   {
     path: "/planning/extension-activity/:id",
     name: "extension-activity",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "extention activity" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/extension-activity"),
   },
   {
     path: "/planning/research",
     name: "research",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "research" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/research"),
   },
   {
     path: "/procurement/manage-pr",
     name: "managePR",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "manage purchase request" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/manage-pr"),
   },
   {
     path: "/procurement/rfq",
     name: "rfq",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "request for quotation" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/rfq"),
   },
   {
     path: "/procurement/po",
     name: "po",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "purchase order" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/po"),
   },
   {
     path: "/responsibility-center/financial",
     name: "responsibility-center-financial",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "financial review" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/responsibility-center/financial"),
   },
   {
     path: "/responsibility-center/technical",
     name: "responsibility-center-technical",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "technical review" && x.AccessList.Type.toLowerCase() === "my")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/responsibility-center/technical"),
   },
   {
@@ -308,31 +461,57 @@ export default [
   {
     path: "/inspection/incoming",
     name: "inspectionIncoming",
-    meta: { authRequired: true },
+    // meta: { authRequired: true },
     component: () => import("./views/inspection/incoming"),
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "incoming" && x.AccessList.Type.toLowerCase() === "inspection")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
   },
   {
     path: "/inspection/iar",
     name: "inspectionIar",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "iar" && x.AccessList.Type.toLowerCase() === "inspection")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/inspection/iar"),
   },
   {
     path: "/supply-and-assets/request-for-payment",
     name: "RFPPO",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "request for payment" && x.AccessList.Type.toLowerCase() === "inspection")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/property/rfp-po"),
   },
   {
     path: "/inspection/property",
     name: "inspectionProperty",
-    meta: { authRequired: true },
     component: () => import("./views/inspection/property"),
   },
   {
     path: "/inspection/propertyinspection/:id",
     name: "inspectionPropertyInspect",
-    meta: { authRequired: true },
     component: () => import("./views/inspection/propertyinspection"),
   },
   {
@@ -372,27 +551,54 @@ export default [
     component: () => import("./views/property/posted"),
   },
   {
-    path: "/property/inspection/:id",
-    name: "propertyInspection",
+    path: "/property/location",
+    name: "propertyLocation",
     meta: { authRequired: true },
-    component: () => import("./views/property/inspection"),
+    component: () => import("./views/property/location"),
   },
   {
     path: "/procurement/procurables",
     name: "procurables",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "list of procurables" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/procurables"),
   },
   {
     path: "/procurement/cpr",
     name: "cpr",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "consolidated procurable resource" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/cpr"),
   },
   {
     path: "/planning/api-list",
     name: "api-list",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "api list" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/api-list"),
   },
   {
@@ -404,19 +610,46 @@ export default [
   {
     path: "/procurement/settings",
     name: "procurement-settings",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "settings" && x.AccessList.Type.toLowerCase() === "procurement")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/procurement/settings"),
   },
   {
     path: "/planning/settings",
     name: "planning-settings",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "settings" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/settings"),
   },
   {
     path: "/administration/settings",
     name: "administration-settings",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "settings" && x.AccessList.Type.toLowerCase() === "administration")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/administration/settings"),
   },
 ];

@@ -149,7 +149,7 @@ export default {
                 address: "",
                 companyTypeId: "",
             };
-            this.companyType = ""
+            this.companyType = "";
         },
         updateItem(props) {
             this.form = cloneDeep(props.item);
@@ -187,6 +187,9 @@ export default {
                 }
             });
         },
+        dropData(data){
+            this.companyType = data.type;
+        }
     },
 };
 </script>

@@ -3282,6 +3282,11 @@ crypto-browserify@^3.11.0:
     randombytes "^2.0.0"
     randomfill "^1.0.3"
 
+crypto-js@^4.0.0:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-4.1.1.tgz#9e485bcf03521041bd85844786b83fb7619736cf"
+  integrity sha512-o2JlM7ydqd3Qk9CA0L4NL6mTzU2sdx96a+oOfPu8Mkl/PK51vSyoi8/rQ8NknZtk44vq15lmhAj9CIAGwgeWKw==
+
 css-color-names@0.0.4, css-color-names@^0.0.4:
   version "0.0.4"
   resolved "https://registry.npmjs.org/css-color-names/-/css-color-names-0.0.4.tgz"
@@ -9164,9 +9169,9 @@ uuid@^3.3.2, uuid@^3.4.0:
   integrity sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==
 
 v-click-outside@^3.1.2:
-  version "3.1.2"
-  resolved "https://registry.npmjs.org/v-click-outside/-/v-click-outside-3.1.2.tgz"
-  integrity sha512-gMdRqfRE6m6XU6SiFi3dyBlFB2MWogiXpof8Aa3LQysrl9pzTndqp/iEaAphLoadaQUFnQ0ec6fLLaxr7LiY6A==
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/v-click-outside/-/v-click-outside-3.2.0.tgz#850ac3f52d66d84b9f7e8002a1bcadcafec5534e"
+  integrity sha512-QD0bDy38SHJXQBjgnllmkI/rbdiwmq9RC+/+pvrFjYJKTn8dtp7Penf9q1lLBta280fYG2q53mgLhQ+3l3z74w==
 
 v-mask@^2.2.3:
   version "2.2.3"
@@ -9258,6 +9263,13 @@ vue-cropperjs@^4.1.0:
   integrity sha512-ORQTaxsygsFvz21Hyf5yNUwQXGRdLXYF4964ueLjR+VpKjHkoqV67oDT3gLCHyrq5HRKmwJPShUiHzdhIo3JTQ==
   dependencies:
     cropperjs "^1.5.6"
+
+vue-cryptojs@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/vue-cryptojs/-/vue-cryptojs-2.3.0.tgz#87df00d78762be581abcc220a0f753fb469abfb5"
+  integrity sha512-jOoAFij6nfWEK5thphHfGGKiA5xvxywCdta7/erdGNNy8p5LF9MKxKhWduV6UMaGxrhldFkSZan+bhiPO/Lrkg==
+  dependencies:
+    crypto-js "^4.0.0"
 
 vue-easy-lightbox@^0.14.0:
   version "0.14.0"

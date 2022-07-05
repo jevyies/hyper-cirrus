@@ -44,23 +44,29 @@ export default {
       pendingData: [],
       postedData: [],
       availableData: [],
+      cancelledData: [],
       backupData: {},
       filterPending: "",
       filterPosted: "",
       filterAvailable: "",
-      pageOptions: [10, 25, 50, 100],
+      filterCancelled: "",
+      pageOptions: [2, 25, 50, 100],
       perPagePending: 10,
       perPagePosted: 10,
       perPageAvailable: 10,
+      perPageCancelled: 10,
       currentPagePending: 1,
       currentPagePosted: 1,
       currentPageAvailable: 1,
+      currentPageCancelled: 1,
       pendingLoading: false,
       postedLoading: false,
       availableLoading: false,
+      cancelledLoading: false,
       pendingIndex: -1,
       postedIndex: -1,
       availableIndex: -1,
+      cancelledIndex: -1,
       cycle: this.$store.state.data.cycle,
       form: {
         id: null,
@@ -200,6 +206,44 @@ export default {
         return this.availableData.length;
       }
     },
+    filteredCancelled() {
+      let data = this.cancelledData;
+      var total = this.currentPageCancelled * this.perPageCancelled;
+      if (this.filterCancelled.trim() != "" && this.filterCancelled) {
+        data = data.filter((item) => {
+          if (
+            item.iarNumber
+              .toUpperCase()
+              .includes(this.filterCancelled.toUpperCase())
+          )
+            return item.iarNumber
+              .toUpperCase()
+              .includes(this.filterCancelled.toUpperCase());
+          else if (item.drNumber)
+            if (
+              item.drNumber
+                .toUpperCase()
+                .includes(this.filterCancelled.toUpperCase())
+            )
+              return item.drNumber
+                .toUpperCase()
+                .includes(this.filterCancelled.toUpperCase());
+        });
+      }
+      var currentData = data.slice(total - this.perPageCancelled, total);
+      if (this.currentPageCancelled > 1 && currentData.length == 0) {
+        total = (this.currentPageCancelled - 1) * this.perPageCancelled;
+        currentData = data.slice(total - this.perPageCancelled, total);
+      }
+      return currentData;
+    },
+    rowsCancelled() {
+      if (this.filterCancelled.trim() != "" && this.filterCancelled) {
+        return this.filteredCancelled.length;
+      } else {
+        return this.cancelledData.length;
+      }
+    },
   },
   created() {
     this.changeCycle(this.$store.state.data.cycle);
@@ -209,6 +253,7 @@ export default {
       this.getPending(cycle);
       this.getPosted(cycle);
       this.getAvailable(cycle);
+      this.getCancelled(cycle);
     },
     getPending(cycle) {
       this.pendingLoading = true;
@@ -218,6 +263,7 @@ export default {
           this.pendingLoading = false;
           res.data.forEach((x) => {
             x.visible = false;
+            x.iarDate = new Date(x.iarDate);
             x.dateOfDelivery = new Date(x.dateOfDelivery);
             x.dateInspected = new Date(x.dateInspected);
             x.acceptanceDate = new Date(x.acceptanceDate);
@@ -245,6 +291,7 @@ export default {
           this.postedLoading = false;
           res.data.forEach((x) => {
             x.visible = false;
+            x.iarDate = new Date(x.iarDate);
             x.dateOfDelivery = new Date(x.dateOfDelivery);
             x.dateInspected = new Date(x.dateInspected);
             x.acceptanceDate = new Date(x.acceptanceDate);
@@ -269,6 +316,7 @@ export default {
           this.availableLoading = false;
           res.data.forEach((x) => {
             x.visible = false;
+            x.iarDate = new Date(x.iarDate);
             x.dateOfDelivery = new Date(x.dateOfDelivery);
             x.dateInspected = new Date(x.dateInspected);
             x.acceptanceDate = new Date(x.acceptanceDate);
@@ -290,6 +338,34 @@ export default {
             );
           }
           this.availableLoading = false;
+        });
+    },
+    getCancelled(cycle) {
+      this.cancelledLoading = true;
+      this.$store
+        .dispatch("inspectioniar/GetInspectionIarCancelled", cycle)
+        .then((res) => {
+          this.cancelledLoading = false;
+          res.data.forEach((x) => {
+            x.visible = false;
+            x.iarDate = new Date(x.iarDate);
+            // x.dateOfDelivery = new Date(x.dateOfDelivery);
+            // x.dateInspected = new Date(x.dateInspected);
+            // x.acceptanceDate = new Date(x.acceptanceDate);
+          });
+          this.cancelledData = res.data;
+        })
+        .catch((err) => {
+          let stringErr = err.toString();
+          if (stringErr.includes("Network")) {
+            this.showToast("Network Error!", "error");
+          } else {
+            this.showToast(
+              "Something went wrong getting cancelled IAR!",
+              "error"
+            );
+          }
+          this.cancelledLoading = false;
         });
     },
     onSubmit(props) {
@@ -354,6 +430,7 @@ export default {
             );
             this.pendingData.splice(iarIndex, 1);
             res.data.visible = false;
+            res.data.iarDate = new Date(res.data.iarDate);
             res.data.dateOfDelivery = new Date(res.data.dateOfDelivery);
             res.data.dateInspected = new Date(res.data.dateInspected);
             res.data.acceptanceDate = new Date(res.data.acceptanceDate);
@@ -699,7 +776,7 @@ export default {
           <span class="d-inline-block d-sm-none">
             <i class="bx bx-home"></i>
           </span>
-          <span class="d-none d-sm-inline-block">Pending IAR</span>
+          <span class="d-none d-sm-inline-block">Pending</span>
         </template>
         <div
           class="
@@ -784,7 +861,7 @@ export default {
                   >
                     <div>
                       <h5 class="mb-0">{{ x.iarNumber }}</h5>
-                      <div>DR Number: {{ x.drNumber }}</div>
+                      <div>{{ formatDate(x.iarDate) }}</div>
                       <small>
                         <a
                           href="javascript: void(0);"
@@ -803,7 +880,7 @@ export default {
                       </small>
                     </div>
                     <div class="float-end d-flex align-items-center">
-                      <div>
+                      <!-- <div>
                         <small>Total Amount:</small>
                         <h6>
                           {{
@@ -813,7 +890,7 @@ export default {
                             }).format(x.total)
                           }}
                         </h6>
-                      </div>
+                      </div> -->
                       <div class="ms-4">
                         <b-dropdown
                           id="dropdown-dropleft"
@@ -826,7 +903,9 @@ export default {
                           <template #button-content>
                             <i class="fas fa-ellipsis-v"></i>
                           </template>
-                          <b-dropdown-item @click="updateIar(x, 0)"
+                          <b-dropdown-item
+                            @click="updateIar(x, 0)"
+                            variant="info"
                             ><i class="mdi mdi-update font-size-18 me-1"></i
                             >Update Item</b-dropdown-item
                           >
@@ -846,20 +925,38 @@ export default {
                   :accordion="`po-accordion-${x.id}`"
                   role="tabpanel"
                 >
-                  <b-card-body>
+                  <b-card-body
+                    class="
+                      border
+                      border-3
+                      border-bottom-0
+                      border-start-0
+                      border-end-0
+                    "
+                  >
                     <div class="row">
                       <div class="col-md-3">
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date of Delivery: </b>
-                          {{ formatDate(x.dateOfDelivery) }}
+                          Date of Delivery:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateOfDelivery)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date Inspected: </b>
-                          {{ formatDate(x.dateInspected) }}
+                          Date Inspected:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateInspected)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Acceptance Date: </b>
-                          {{ formatDate(x.acceptanceDate) }}
+                          Acceptance Date:
+                          <b class="font-size-14">{{
+                            formatDate(x.acceptanceDate)
+                          }}</b>
+                        </div>
+                        <div class="font-size-12 mb-1">
+                          DR Number:
+                          <b class="font-size-14">{{ x.drNumber }}</b>
                         </div>
                         <!-- <div class="font-size-12 mb-1">
                           <div class="d-flex align-items-center">
@@ -1050,7 +1147,7 @@ export default {
           <span class="d-inline-block d-sm-none">
             <i class="bx bx-home"></i>
           </span>
-          <span class="d-none d-sm-inline-block">Posted IAR</span>
+          <span class="d-none d-sm-inline-block">Posted</span>
         </template>
         <div
           class="
@@ -1135,7 +1232,7 @@ export default {
                   >
                     <div>
                       <h5 class="mb-0">{{ x.iarNumber }}</h5>
-                      <div>DR Number: {{ x.drNumber }}</div>
+                      <div>{{ formatDate(x.iarDate) }}</div>
                       <small>
                         <a
                           href="javascript: void(0);"
@@ -1154,7 +1251,7 @@ export default {
                       </small>
                     </div>
                     <div class="float-end d-flex align-items-center">
-                      <div>
+                      <!-- <div>
                         <small>Total Amount:</small>
                         <h6>
                           {{
@@ -1164,7 +1261,7 @@ export default {
                             }).format(x.total)
                           }}
                         </h6>
-                      </div>
+                      </div> -->
                       <div class="ms-4">
                         <b-dropdown
                           id="dropdown-dropleft"
@@ -1177,7 +1274,9 @@ export default {
                           <template #button-content>
                             <i class="fas fa-ellipsis-v"></i>
                           </template>
-                          <b-dropdown-item @click="updateIar(x, 1)"
+                          <b-dropdown-item
+                            @click="updateIar(x, 1)"
+                            variant="info"
                             ><i class="mdi mdi-update font-size-18 me-1"></i
                             >Update Item</b-dropdown-item
                           >
@@ -1202,20 +1301,38 @@ export default {
                   :accordion="`po-accordion-${x.id}`"
                   role="tabpanel"
                 >
-                  <b-card-body>
+                  <b-card-body
+                    class="
+                      border
+                      border-3
+                      border-bottom-0
+                      border-start-0
+                      border-end-0
+                    "
+                  >
                     <div class="row">
                       <div class="col-md-3">
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date of Delivery: </b>
-                          {{ formatDate(x.dateOfDelivery) }}
+                          Date of Delivery:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateOfDelivery)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date Inspected: </b>
-                          {{ formatDate(x.dateInspected) }}
+                          Date Inspected:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateInspected)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Acceptance Date: </b>
-                          {{ formatDate(x.acceptanceDate) }}
+                          Acceptance Date:
+                          <b class="font-size-14">{{
+                            formatDate(x.acceptanceDate)
+                          }}</b>
+                        </div>
+                        <div class="font-size-12 mb-1">
+                          DR Number:
+                          <b class="font-size-14">{{ x.drNumber }}</b>
                         </div>
                       </div>
                       <div class="col-md-9 border-start border-3">
@@ -1340,7 +1457,7 @@ export default {
           <span class="d-inline-block d-sm-none">
             <i class="bx bx-home"></i>
           </span>
-          <span class="d-none d-sm-inline-block">Available IAR</span>
+          <span class="d-none d-sm-inline-block">Available</span>
         </template>
         <div
           class="
@@ -1425,7 +1542,7 @@ export default {
                   >
                     <div>
                       <h5 class="mb-0">{{ x.iarNumber }}</h5>
-                      <div>DR Number: {{ x.drNumber }}</div>
+                      <div>{{ formatDate(x.iarDate) }}</div>
                       <small>
                         <a
                           href="javascript: void(0);"
@@ -1444,7 +1561,7 @@ export default {
                       </small>
                     </div>
                     <div class="float-end d-flex align-items-center">
-                      <div>
+                      <!-- <div>
                         <small>Total Amount:</small>
                         <h6>
                           {{
@@ -1454,7 +1571,7 @@ export default {
                             }).format(x.total)
                           }}
                         </h6>
-                      </div>
+                      </div> -->
                       <div class="ms-4">
                         <b-dropdown
                           id="dropdown-dropleft"
@@ -1467,7 +1584,9 @@ export default {
                           <template #button-content>
                             <i class="fas fa-ellipsis-v"></i>
                           </template>
-                          <b-dropdown-item @click="updateIar(x, 2)"
+                          <b-dropdown-item
+                            @click="updateIar(x, 2)"
+                            variant="info"
                             ><i class="mdi mdi-update font-size-18 me-1"></i
                             >Update Item</b-dropdown-item
                           >
@@ -1492,20 +1611,38 @@ export default {
                   :accordion="`po-accordion-${x.id}`"
                   role="tabpanel"
                 >
-                  <b-card-body>
+                  <b-card-body
+                    class="
+                      border
+                      border-3
+                      border-bottom-0
+                      border-start-0
+                      border-end-0
+                    "
+                  >
                     <div class="row">
                       <div class="col-md-3">
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date of Delivery: </b>
-                          {{ formatDate(x.dateOfDelivery) }}
+                          Date of Delivery:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateOfDelivery)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Date Inspected: </b>
-                          {{ formatDate(x.dateInspected) }}
+                          Date Inspected:
+                          <b class="font-size-14">{{
+                            formatDate(x.dateInspected)
+                          }}</b>
                         </div>
                         <div class="font-size-12 mb-1">
-                          <b class="font-size-14">Acceptance Date: </b>
-                          {{ formatDate(x.acceptanceDate) }}
+                          Acceptance Date:
+                          <b class="font-size-14">{{
+                            formatDate(x.acceptanceDate)
+                          }}</b>
+                        </div>
+                        <div class="font-size-12 mb-1">
+                          DR Number:
+                          <b class="font-size-14">{{ x.drNumber }}</b>
                         </div>
                       </div>
                       <div class="col-md-9 border-start border-3">
@@ -1678,6 +1815,261 @@ export default {
                   v-model="currentPageAvailable"
                   :total-rows="rowsAvailable"
                   :per-page="perPageAvailable"
+                ></b-pagination>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </b-tab>
+      <b-tab>
+        <template v-slot:title>
+          <span class="d-inline-block d-sm-none">
+            <i class="bx bx-home"></i>
+          </span>
+          <span class="d-none d-sm-inline-block">Cancelled</span>
+        </template>
+        <div
+          class="
+            card
+            border-4 border-top border-start-0 border-end-0 border-primary
+          "
+        >
+          <div class="card-body">
+            <div class="row mb-2">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center h-100">
+                  <h4 class="mb-0">Cancelled IAR List</h4>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex float-end">
+                  <div id="tickets-table_filter" class="dataTables_filter me-1">
+                    <label class="d-inline-flex align-items-center">
+                      <b-form-input
+                        autocomplete="off"
+                        v-model="filterCancelled"
+                        type="search"
+                        placeholder="Search IAR..."
+                        class="form-control"
+                      ></b-form-input>
+                    </label>
+                  </div>
+                  <div id="tickets-table_length" class="dataTables_length">
+                    <label class="d-inline-flex align-items-center mb-0">
+                      <b-form-select
+                        class="form-select"
+                        v-model="perPageCancelled"
+                        size="sm"
+                        :options="pageOptions"
+                      >
+                      </b-form-select>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="h-50vh d-flex align-items-center justify-content-center"
+              v-if="cancelledLoading"
+            >
+              <div class="preloader-component me-2">
+                <div class="status">
+                  <div class="spinner-chase w-25px h-25px">
+                    <div class="chase-dot"></div>
+                    <div class="chase-dot"></div>
+                    <div class="chase-dot"></div>
+                    <div class="chase-dot"></div>
+                    <div class="chase-dot"></div>
+                    <div class="chase-dot"></div>
+                  </div>
+                </div>
+              </div>
+              <h5 class="mb-0">Loading...</h5>
+            </div>
+            <div
+              class="h-50vh d-flex align-items-center justify-content-center"
+              v-else-if="cancelledData.length == 0"
+            >
+              <h5 class="text-muted">
+                <i class="fas fa-exclamation-triangle me-2"></i>No Data Found
+              </h5>
+            </div>
+            <div
+              class="pt-1 pb-1 text-muted"
+              role="tablist"
+              v-for="(x, index) in filteredCancelled"
+              :key="x.id"
+            >
+              <b-card
+                no-body
+                class="mb-1"
+                :style="`z-index: ${filteredCancelled.length - index}`"
+              >
+                <b-card-header header-tag="header" role="tab">
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <h5 class="mb-0">{{ x.iarNumber }}</h5>
+                      <div>{{ formatDate(x.iarDate) }}</div>
+                      <small>
+                        <a
+                          href="javascript: void(0);"
+                          class="text-success d-flex align-items-center"
+                          @click="x.visible = !x.visible"
+                        >
+                          {{ x.visible ? "Hide" : "Show" }}
+                          Details
+                          <i
+                            class="bx bx-chevron-right rotate font-size-14"
+                            :class="{
+                              'rotate-90': x.visible,
+                            }"
+                          ></i>
+                        </a>
+                      </small>
+                    </div>
+                    <!-- <div class="float-end d-flex align-items-center">
+                      <div>
+                        <small>Total Amount:</small>
+                        <h6>
+                          {{
+                            Intl.NumberFormat("ja-JP", {
+                              currency: "PHP",
+                              style: "currency",
+                            }).format(x.total)
+                          }}
+                        </h6>
+                      </div>
+                    </div> -->
+                  </div>
+                </b-card-header>
+                <b-collapse
+                  :visible="x.visible"
+                  :accordion="`po-accordion-${x.id}`"
+                  role="tabpanel"
+                >
+                  <b-card-body
+                    class="
+                      border
+                      border-3
+                      border-bottom-0
+                      border-start-0
+                      border-end-0
+                    "
+                  >
+                    <div class="row">
+                      <!-- <div class="col-md-3">
+                        <div class="font-size-12 mb-1">
+                          <b class="font-size-14">Date of Delivery: </b>
+                          {{ formatDate(x.dateOfDelivery) }}
+                        </div>
+                        <div class="font-size-12 mb-1">
+                          <b class="font-size-14">Date Inspected: </b>
+                          {{ formatDate(x.dateInspected) }}
+                        </div>
+                        <div class="font-size-12 mb-1">
+                          <b class="font-size-14">Acceptance Date: </b>
+                          {{ formatDate(x.acceptanceDate) }}
+                        </div>
+                      </div>
+                      <div class="col-md-9 border-start border-3"> -->
+                      <div class="col-md-12">
+                        <div class="ms-2">
+                          <div
+                            class="
+                              h-50vh
+                              d-flex
+                              align-items-center
+                              justify-content-center
+                            "
+                            v-if="x.iarItems.length == 0"
+                          >
+                            <h5 class="text-muted">
+                              <i class="fas fa-exclamation-triangle me-2"></i>No
+                              Data Found
+                            </h5>
+                          </div>
+                          <div v-else>
+                            <table width="100%">
+                              <thead>
+                                <tr class="border-bottom">
+                                  <th style="width: 90px" class="py-2">Qty</th>
+                                  <th class="py-2">Item Name</th>
+                                  <th class="py-2" style="width: 150px">
+                                    Unit Price
+                                  </th>
+                                  <th class="py-2" style="width: 150px">
+                                    Total Price
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr
+                                  v-for="y in x.iarItems"
+                                  :key="y.id"
+                                  class="border-bottom"
+                                >
+                                  <td class="py-2">
+                                    {{ y.quantity }}
+                                  </td>
+                                  <td class="py-2">
+                                    <div>
+                                      {{ y.rfqSupplierOffer.itemName }}
+                                    </div>
+                                    <small>{{
+                                      y.rfqSupplierOffer.description
+                                    }}</small>
+                                  </td>
+                                  <td class="py-2">
+                                    {{
+                                      Intl.NumberFormat("ja-JP", {
+                                        currency: "PHP",
+                                        style: "currency",
+                                      }).format(y.rfqSupplierOffer.unitCost)
+                                    }}
+                                  </td>
+                                  <td class="py-2">
+                                    {{
+                                      Intl.NumberFormat("ja-JP", {
+                                        currency: "PHP",
+                                        style: "currency",
+                                      }).format(
+                                        y.rfqSupplierOffer.unitCost *
+                                          y.rfqSupplierOffer.quantity
+                                      )
+                                    }}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </b-card-body>
+                </b-collapse>
+              </b-card>
+            </div>
+            <div
+              class="
+                dataTables_paginate
+                paging_simple_numbers
+                d-flex
+                flex-row-reverse
+                pt-3
+                pb-3
+              "
+            >
+              <ul
+                class="pagination pagination-rounded mb-0"
+                style="z-index: -1"
+              >
+                <!-- pagination -->
+                <b-pagination
+                  v-model="currentPageCancelled"
+                  :total-rows="rowsCancelled"
+                  :per-page="perPageCancelled"
                 ></b-pagination>
               </ul>
             </div>

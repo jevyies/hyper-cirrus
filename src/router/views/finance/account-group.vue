@@ -57,10 +57,10 @@ export default {
       sortBy: "groupName",
       sortDesc: false,
       fields: [
-        {
-          key: "id",
-          sortable: true,
-        },
+        // {
+        //   key: "id",
+        //   sortable: true,
+        // },
         {
           key: "rcaCode",
           label: "RCA Code",

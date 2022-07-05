@@ -217,14 +217,19 @@ export default {
                             class="
                                 logo-lg
                                 d-flex
-                                align-items-end
+                                align-items-center
                             "
                         >
                             <div class="d-flex align-items-end">
-                                <h4 class="logo-lg text-white mt-2 mb-0"><img src="@/assets/images/logo/g-white.png" style="height:50px;"/></h4>
+                                <h4 class="logo-lg text-white mb-0"><img src="@/assets/images/logo/g-white.png" style="height:50px;"/></h4>
                             </div>
                             <div class="d-none d-sm-inline-block ms-2">
-                                <h4 class="mb-0 font-size-22" style="line-height:22px;">Hyper Cirrus</h4>
+                                <div class="">
+                                    <img src="@/assets/images/logo/hyper-letter-white.svg" alt="hyper-text" height="15">
+                                </div>
+                                <div>
+                                    <img src="@/assets/images/logo/cirrus-letter-white.svg" alt="hyper-text" height="25">
+                                </div>
                                 <small class="text-white text-truncate">{{$store.state.data.campus.campusName}} | {{$store.state.data.deliveryUnit.name}}</small>
                             </div>
                         </span>

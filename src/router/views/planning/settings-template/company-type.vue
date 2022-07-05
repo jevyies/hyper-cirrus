@@ -182,7 +182,7 @@ export default {
                                 align-items-center
                             "
                         >
-                            <h4 class="card-title m-0">Table List</h4>
+                            <h4 class="card-title m-0">Company Type List</h4>
                             <button
                                 type="button"
                                 @click="addCt()"

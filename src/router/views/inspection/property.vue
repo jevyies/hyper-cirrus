@@ -9,6 +9,7 @@ import createNumberMask from "text-mask-addons/dist/createNumberMask";
 import MaskedInput from "vue-text-mask";
 import ItemCategory from "@/components/modals/item-category.vue";
 import Supplier from "@/components/modals/supplier.vue";
+import Unit from "@/components/modals/unit.vue";
 import UploadPopover from "@/components/widgets/upload-popover.vue";
 
 export default {
@@ -24,6 +25,7 @@ export default {
     MaskedInput,
     ItemCategory,
     Supplier,
+    Unit,
     UploadPopover,
   },
   data() {
@@ -54,31 +56,31 @@ export default {
       currentPage: 1,
       perPage: 10,
       pageOptions: [10, 25, 50, 100],
-      filter: null,
+      filter: "",
       filterOn: [],
       sortBy: "poNumber",
       sortDesc: false,
       fields: [
-        // {
-        //   key: "displayDetails",
-        //   sortable: false,
-        //   label: " ",
-        //   thStyle: { width: "30px" },
-        // },
+        {
+          key: "displayDetails",
+          sortable: false,
+          label: " ",
+          thStyle: { width: "30px" },
+        },
         {
           key: "poNumber",
           sortable: true,
-          label: "PO Number",
+          label: "Purchase Order",
         },
-        {
-          key: "supplier",
-          sortable: true,
-          label: "Supplier",
-        },
-        {
-          key: "actions",
-          thStyle: { width: "150px" },
-        },
+        // {
+        //   key: "supplier",
+        //   sortable: true,
+        //   label: "Supplier",
+        // },
+        // {
+        //   key: "actions",
+        //   thStyle: { width: "150px" },
+        // },
       ],
       propertyFields: [
         {
@@ -122,6 +124,10 @@ export default {
         placement: "lefttop",
         folder: "Property",
       },
+      alert: {
+        type: "",
+        message: "",
+      },
     };
   },
   validations: {
@@ -154,9 +160,6 @@ export default {
     },
   },
   computed: {
-    rows() {
-      return this.tableData.length;
-    },
     grouped() {
       var grouped = groupBy(this.tableData, "poNumber");
       var array = [];
@@ -166,9 +169,37 @@ export default {
           details: grouped[key],
           showDetails: false,
           rotateChevy: false,
+          currentPage: 1,
+          filter: "",
+          tableBusy: false,
         });
       }
       return array;
+    },
+    filtered() {
+      let data = this.grouped;
+      if (this.filter.trim() != "" && this.filter) {
+        data = data.filter((x) => {
+          if (x.poNumber.toUpperCase().includes(this.filter.toUpperCase()))
+            return x.poNumber.toUpperCase().includes(this.filter.toUpperCase());
+          else {
+            var supplier = 0;
+            x.details.forEach((y) => {
+              if (y.supplier.toUpperCase().includes(this.filter.toUpperCase()))
+                supplier++;
+            });
+            if (supplier > 0) return true;
+          }
+        });
+      }
+      return data;
+    },
+    rows() {
+      if (this.filter.trim() != "" && this.filter) {
+        return this.filtered.length;
+      } else {
+        return this.grouped.length;
+      }
     },
   },
   created() {
@@ -179,10 +210,6 @@ export default {
       .then((res) => {
         this.tableBusy = false;
         res.data.forEach((item) => {
-          item.currentPage = 1;
-          item.filter = null;
-          item.filterOn = [];
-          item.tableBusy = false;
           item.visible = false;
           item.itemVisible = false;
           item.assignmentHistory = [];
@@ -202,17 +229,37 @@ export default {
       });
   },
   methods: {
-    onFiltered(filteredItems) {
-      this.totalRows = filteredItems.length;
-      this.currentPage = 1;
+    propertyFiltered(row) {
+      let data = row.details;
+      if (row.filter.trim() != "" && row.filter) {
+        data = data.filter((x) => {
+          if (x.name.toUpperCase().includes(row.filter.toUpperCase()))
+            return x.name.toUpperCase().includes(row.filter.toUpperCase());
+          else if (
+            x.propertyNumber.toUpperCase().includes(row.filter.toUpperCase())
+          )
+            return x.propertyNumber
+              .toUpperCase()
+              .includes(row.filter.toUpperCase());
+        });
+      }
+      return data;
     },
-    propertyRows(props) {
-      return props.length;
+    propertyRows(row) {
+      if (row.filter.trim() != "" && row.filter) {
+        return this.propertyFiltered(row).length;
+      } else {
+        return row.details.length;
+      }
     },
     onCreate() {
       this.submitted = true;
       this.$v.$touch();
       if (this.$v.$invalid) {
+        this.alert = {
+          type: "warning",
+          message: "There are fields that require your attention.",
+        };
         return;
       } else {
         this.form.dateAcquired = this.setDate(this.form.dateAcquired);
@@ -222,10 +269,6 @@ export default {
             if (res.data.error) {
               return this.showToast(res.data.detail, "error");
             }
-            res.data.currentPage = 1;
-            res.data.filter = null;
-            res.data.filterOn = [];
-            res.data.tableBusy = false;
             res.data.visible = false;
             res.data.itemVisible = false;
             res.data.assignmentHistory = [];
@@ -238,6 +281,7 @@ export default {
             this.tableData.splice(this.indexSelected, 1, res.data);
             this.showToast("Successfully updated!", "success");
             this.onReset();
+            this.returnToTable();
           })
           .catch((err) => {
             this.showToast(
@@ -275,6 +319,11 @@ export default {
         returnNotes: "",
       };
       this.editMode = false;
+      this.submitted = false;
+      this.alert = {
+        type: "",
+        message: "",
+      };
     },
     updateItem(props) {
       this.form = cloneDeep(props);
@@ -392,6 +441,13 @@ export default {
       this.form.supplierId = 0;
       this.form.supplier = "";
     },
+    getUnit() {
+      this.$refs.unit.getData();
+      this.$bvModal.show("unit-modal");
+    },
+    dropUnit(data) {
+      this.form.unit = data.unitName;
+    },
     showDtls(row) {
       row.item.rotateChevy = !row.item.rotateChevy;
       if (row.item.showDetails) {
@@ -403,6 +459,15 @@ export default {
         row.toggleDetails();
         setTimeout(() => {
           row.item.showDetails = !row.item.showDetails;
+        }, 50);
+      }
+    },
+    searchDtls(row) {
+      row.item.rotateChevy = true;
+      if (!row.item.showDetails) {
+        row.toggleDetails();
+        setTimeout(() => {
+          row.item.showDetails = true;
         }, 50);
       }
     },
@@ -435,6 +500,12 @@ export default {
             );
           });
       }
+    },
+    ifCurrent(id, current) {
+      if (current) {
+        if (id == current.id) return true;
+      }
+      return false;
     },
     uploadDocument(response, id) {
       var index = this.tableData.findIndex((x) => x.id == id);
@@ -580,7 +651,7 @@ export default {
                 <div class="row">
                   <div class="col-md-6">
                     <div class="d-flex align-items-center h-100">
-                      <h5 class="mb-0">List of Properties Available for Inspection</h5>
+                      <h5 class="mb-0">List of Properties</h5>
                     </div>
                   </div>
                   <div class="col-md-6">
@@ -594,7 +665,7 @@ export default {
                             autocomplete="off"
                             v-model="filter"
                             type="search"
-                            placeholder="Search Property..."
+                            placeholder="Search PO / Supplier..."
                             class="form-control"
                           ></b-form-input>
                         </label>
@@ -616,17 +687,14 @@ export default {
                 <div class="table-responsive mb-0 mt-2">
                   <b-table
                     class="datatables target-table"
-                    :items="grouped"
+                    :items="filtered"
                     :fields="fields"
                     responsive="sm"
                     :per-page="perPage"
                     :current-page="currentPage"
                     :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc"
-                    :filter="filter"
-                    :filter-included-fields="filterOn"
                     :busy="tableBusy"
-                    @filtered="onFiltered"
                     bordered
                     outlined
                     striped
@@ -657,12 +725,61 @@ export default {
                       </div>
                     </template>
                     <template #cell(poNumber)="row">
-                      <b class="text-muted">{{ row.value }}</b>
-                    </template>
-                    <template #cell(supplier)="row">
-                      {{ row.item.details[0].supplier }}
+                      <div
+                        class="
+                          d-flex
+                          justify-content-between
+                          align-items-center
+                        "
+                      >
+                        <div>
+                          <b class="text-muted">{{ row.value }}</b>
+                          <div>
+                            {{ row.item.details[0].supplier }}
+                          </div>
+                        </div>
+                        <div>
+                          <label
+                            class="d-inline-flex align-items-center m-0 p-0"
+                          >
+                            Search:
+                            <b-form-input
+                              autocomplete="off"
+                              v-model="row.item.filter"
+                              type="search"
+                              placeholder="Search Property..."
+                              @click="searchDtls(row)"
+                              class="form-control form-control-sm ms-2"
+                            ></b-form-input>
+                          </label>
+                        </div>
+                      </div>
                     </template>
                     <template #cell(actions)="row">
+                      <!-- <div class="float-end">
+                        <b-dropdown
+                          id="dropdown-dropleft"
+                          right
+                          variant="link"
+                          toggle-class="text-decoration-none"
+                          menu-class="dropdown-menu-end"
+                          no-caret
+                        >
+                          <template #button-content>
+                            <i class="fas fa-ellipsis-v"></i>
+                          </template>
+                          <b-dropdown-item @click="showDtls(row)"
+                            ><i
+                              class="bx bxs-book-content font-size-18 me-1"
+                            ></i
+                            >{{
+                              row.detailsShowing ? "Hide" : "Show"
+                            }}
+                            Details</b-dropdown-item
+                          >
+                        </b-dropdown>
+                      </div> -->
+
                       <div
                         class="
                           d-flex
@@ -685,7 +802,12 @@ export default {
                     </template>
                     <template #cell(displayDetails)="row">
                       <div
-                        class="d-flex align-items-center justify-content-center"
+                        class="
+                          mt-2
+                          d-flex
+                          align-items-center
+                          justify-content-center
+                        "
                         @click="showDtls(row)"
                       >
                         <i
@@ -702,7 +824,7 @@ export default {
                       </div>
                     </template>
                     <template #row-details="row">
-                      <transition name="max-height">
+                      <b-collapse :visible="row.item.showDetails">
                         <b-card
                           no-body
                           class="
@@ -711,9 +833,8 @@ export default {
                             mb-0
                             border-5 border-top-0 border-start-0 border-end-0
                           "
-                          v-if="row.item.showDetails"
                         >
-                          <div
+                          <!-- <div
                             id="tickets-table_filter"
                             class="dataTables_filter text-md-end"
                           >
@@ -727,22 +848,19 @@ export default {
                                 class="form-control form-control-sm ms-2"
                               ></b-form-input>
                             </label>
-                          </div>
+                          </div> -->
                           <div class="table-responsive mb-0">
                             <b-table
                               class="datatables target-table"
                               thead-class="d-none"
-                              :items="row.item.details"
+                              :items="propertyFiltered(row.item)"
                               :fields="propertyFields"
                               responsive="sm"
                               :per-page="5"
                               :current-page="row.item.currentPage"
                               sort-by="name"
                               :sort-desc="false"
-                              :filter="row.item.filter"
-                              :filter-included-fields="row.item.filterOn"
                               :busy="row.item.tableBusy"
-                              @filtered="row.item.currentPage = 1"
                               show-empty
                             >
                               <template #empty="scope">
@@ -812,7 +930,7 @@ export default {
                                           <small
                                             class="d-flex align-items-center"
                                             >{{
-                                              setAmount(propertyRow.item.amount)
+                                              propertyRow.item.propertyNumber
                                             }}
                                             |
                                             <a
@@ -901,74 +1019,22 @@ export default {
                                         align-items-center
                                       "
                                     >
-                                      <b-dropdown
-                                        id="dropdown-dropleft"
-                                        right
-                                        variant="link"
-                                        toggle-class="text-decoration-none"
-                                        menu-class="dropdown-menu-end"
-                                        no-caret
+                                      <button
+                                        type="button"
+                                        @click="
+                                          viewInspect(propertyRow.item.id)
+                                        "
+                                        style="width: max-content"
+                                        class="
+                                          btn btn-sm btn-info
+                                          d-flex
+                                          align-items-center
+                                        "
                                       >
-                                        <template #button-content>
-                                          <i class="fas fa-ellipsis-v"></i>
-                                        </template>
-                                        <!-- <b-dropdown-item
-                                          @click="updateItem(propertyRow.item)"
-                                          ><i
-                                            class="
-                                              mdi mdi-update
-                                              font-size-18
-                                              me-1
-                                            "
-                                          ></i
-                                          >Update Item</b-dropdown-item
-                                        > -->
-                                        <b-dropdown-item
-                                          @click="
-                                            viewInspect(propertyRow.item.id)
-                                          "
-                                          ><i
-                                            class="
-                                              bx bx-list-check
-                                              font-size-18
-                                              me-1
-                                            "
-                                          ></i
-                                          >View Inspection</b-dropdown-item
-                                        >
-                                        <b-dropdown-item
-                                          v-if="
-                                            propertyRow.item.propertyAssignments
-                                              .length > 0
-                                          "
-                                          @click="returnItem(propertyRow.item)"
-                                          variant="warning"
-                                          ><i
-                                            class="
-                                              bx bx-revision
-                                              font-size-18
-                                              me-1
-                                            "
-                                          ></i
-                                          >Return Item</b-dropdown-item
-                                        >
-                                        <b-dropdown-item
-                                          v-if="
-                                            propertyRow.item.propertyAssignments
-                                              .length == 0
-                                          "
-                                          @click="disposeItem(propertyRow.item)"
-                                          variant="danger"
-                                          ><i
-                                            class="
-                                              mdi mdi-trash-can
-                                              font-size-18
-                                              me-1
-                                            "
-                                          ></i
-                                          >Dispose</b-dropdown-item
-                                        >
-                                      </b-dropdown>
+                                        View Inspection<i
+                                          class="mdi mdi-arrow-right ms-1"
+                                        ></i>
+                                      </button>
                                     </div>
                                   </div>
                                 </b-card-header>
@@ -1105,7 +1171,7 @@ export default {
                                         >
                                           <b-row class="mb-2">
                                             <b-col sm="4" class="text-right"
-                                              ><b>Life Span in Yrs:</b></b-col
+                                              ><b>Life Span in Years:</b></b-col
                                             >
                                             <b-col>{{
                                               propertyRow.item.lifespanInYears
@@ -1254,209 +1320,171 @@ export default {
                                         </p>
                                       </div>
                                     </b-card-body>
-
-                                    <b-card-body
-                                      class="text-muted border"
-                                      v-for="y in propertyRow.item
-                                        .assignmentHistory"
-                                      :key="y.id"
-                                    >
-                                      <b class="font-size-16">
-                                        {{
-                                          y.employee.firstName
-                                            .charAt(0)
-                                            .toUpperCase() +
-                                          y.employee.firstName.slice(1)
-                                        }}
-                                        {{
-                                          y.employee.middleName
-                                            ? `${y.employee.middleName
-                                                .charAt(0)
-                                                .toUpperCase()}.`
-                                            : ""
-                                        }}
-                                        {{
-                                          y.employee.lastName
-                                            .charAt(0)
-                                            .toUpperCase() +
-                                          y.employee.lastName.slice(1)
-                                        }}
-                                      </b>
-                                      <div class="font-size-12 mb-1">
-                                        Position:
-                                        <b class="font-size-14">{{
-                                          y.employee.position
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Assignment Type:
-                                        <b class="font-size-14">{{
-                                          y.assignmentType
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Date Assigned:
-                                        <b class="font-size-14">{{
-                                          formatDate(new Date(y.dateAssigned))
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Date Returned:
-                                        <b
-                                          v-if="
-                                            y.dateReturned ==
-                                            '0001-01-01T00:00:00'
-                                          "
-                                          class="font-size-14"
+                                    <b-card-body class="text-muted border">
+                                      <ul
+                                        class="
+                                          verti-timeline
+                                          list-unstyled
+                                          ms-4
+                                          mb-4
+                                        "
+                                        v-for="y in propertyRow.item
+                                          .assignmentHistory"
+                                        :key="y.id"
+                                      >
+                                        <li
+                                          class="event-list"
+                                          :class="{
+                                            active: ifCurrent(
+                                              y.id,
+                                              propertyRow.item.currentAssignment
+                                            ),
+                                          }"
                                         >
-                                          N/A
-                                        </b>
-                                        <b v-else class="font-size-14">{{
-                                          formatDate(new Date(y.dateReturned))
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Location:
-                                        <b class="font-size-14">{{
-                                          y.propertyLocation
-                                        }}</b>
-                                      </div>
+                                          <div class="event-timeline-dot">
+                                            <i
+                                              v-if="
+                                                ifCurrent(
+                                                  y.id,
+                                                  propertyRow.item
+                                                    .currentAssignment
+                                                )
+                                              "
+                                              class="
+                                                bx
+                                                bxs-right-arrow-circle
+                                                font-size-18
+                                                bx-fade-right
+                                              "
+                                            ></i>
+                                            <i
+                                              v-else
+                                              class="
+                                                bx bx-right-arrow-circle
+                                                font-size-18
+                                              "
+                                            ></i>
+                                          </div>
+                                          <div class="media">
+                                            <div
+                                              class="
+                                                d-flex
+                                                justify-content-between
+                                                align-items-top
+                                                ms-4
+                                                me-3
+                                              "
+                                              style="width: 200px"
+                                            >
+                                              <div>
+                                                <div>
+                                                  <b class="font-size-16">
+                                                    {{
+                                                      y.employee.lastName
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                      y.employee.lastName.slice(
+                                                        1
+                                                      )
+                                                    }},
+                                                  </b>
+                                                </div>
+                                                <div>
+                                                  <b class="font-size-16">
+                                                    {{
+                                                      y.employee.firstName
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                      y.employee.firstName.slice(
+                                                        1
+                                                      )
+                                                    }}
+                                                    {{
+                                                      y.employee.middleName
+                                                        ? `${y.employee.middleName
+                                                            .charAt(0)
+                                                            .toUpperCase()}.`
+                                                        : ""
+                                                    }}
+                                                  </b>
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <i
+                                                  class="
+                                                    bx bx-right-arrow-alt
+                                                    font-size-16
+                                                    text-info
+                                                    align-middle
+                                                    ms-2
+                                                  "
+                                                ></i>
+                                              </div>
+                                            </div>
+                                            <div class="media-body">
+                                              <div class="font-size-12 mb-1">
+                                                Assignment Type:
+                                                <b class="font-size-14">{{
+                                                  y.assignmentType
+                                                }}</b>
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Date Assigned:
+                                                <b
+                                                  class="
+                                                    font-size-14
+                                                    text-success
+                                                  "
+                                                  >{{
+                                                    formatDate(
+                                                      new Date(y.dateAssigned)
+                                                    )
+                                                  }}</b
+                                                >
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Date Returned:
+                                                <b
+                                                  v-if="
+                                                    y.dateReturned ==
+                                                    '0001-01-01T00:00:00'
+                                                  "
+                                                  class="font-size-14"
+                                                >
+                                                  N/A
+                                                </b>
+                                                <b
+                                                  v-else
+                                                  class="
+                                                    font-size-14
+                                                    text-danger
+                                                  "
+                                                  >{{
+                                                    formatDate(
+                                                      new Date(y.dateReturned)
+                                                    )
+                                                  }}</b
+                                                >
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Location:
+                                                <b class="font-size-14">{{
+                                                  y.propertyLocation.location
+                                                }}</b>
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Location Code:
+                                                <b class="font-size-14">{{
+                                                  y.propertyLocation
+                                                    .locationCode
+                                                }}</b>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </li>
+                                      </ul>
                                     </b-card-body>
                                   </b-collapse>
-                                  <!-- Inspection History -->
-                                  <!-- <b-card-body class="border">
-                                    <div
-                                      class="
-                                        d-flex
-                                        align-items-center
-                                        justify-content-between
-                                        cursor-pointer
-                                      "
-                                      @click="
-                                        propertyRow.item.inspectionVisible =
-                                          !propertyRow.item.inspectionVisible
-                                      "
-                                    >
-                                      <h6 class="mb-0">
-                                        <i class="bx bx-show"></i>
-                                        Inspection History
-                                      </h6>
-                                      <h5 class="mb-0">
-                                        <i
-                                          class="bx bx-chevron-right rotate"
-                                          :class="{
-                                            'rotate-90':
-                                              propertyRow.item
-                                                .inspectionVisible,
-                                          }"
-                                        ></i>
-                                      </h5>
-                                    </div>
-                                  </b-card-body>
-                                  <b-collapse
-                                    :visible="
-                                      propertyRow.item.inspectionVisible
-                                    "
-                                    role="tabpanel"
-                                  >
-                                    <b-card-body
-                                      v-if="
-                                        propertyRow.item.propertyInspections
-                                          .length == 0
-                                      "
-                                      class="border"
-                                    >
-                                      <div
-                                        class="
-                                          d-flex
-                                          align-items-center
-                                          justify-content-between
-                                          mb-3
-                                        "
-                                      >
-                                        <p class="mb-0">
-                                          <i>No prior history</i>
-                                        </p>
-                                      </div>
-                                    </b-card-body>
-
-                                    <b-card-body
-                                      class="text-muted border"
-                                      v-for="y in propertyRow.item
-                                        .propertyInspections"
-                                      :key="y.id"
-                                    >
-                                      <b class="font-size-16">
-                                        {{
-                                          formatDateWithTime(
-                                            new Date(y.inspectionDateTime)
-                                          )
-                                        }}
-                                      </b>
-                                      <div class="font-size-12 mb-1">
-                                        Property Status:
-                                        <b class="font-size-14">{{
-                                          y.propertyStatus
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Assessed Value:
-                                        <b class="font-size-14">{{
-                                          y.assessedValue
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Inspection Status:
-                                        <b class="font-size-14">{{
-                                          y.inspectionStatus
-                                        }}</b>
-                                      </div>
-                                      <div class="font-size-12 mb-1">
-                                        Inspected By:
-                                        <b
-                                          v-if="y.employee"
-                                          class="font-size-14"
-                                        >
-                                          {{
-                                            y.employee.firstName
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                            y.employee.firstName.slice(1)
-                                          }}
-                                          {{
-                                            y.employee.middleName
-                                              ? `${y.employee.middleName
-                                                  .charAt(0)
-                                                  .toUpperCase()}.`
-                                              : ""
-                                          }}
-                                          {{
-                                            y.employee.lastName
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                            y.employee.lastName.slice(1)
-                                          }}</b
-                                        >
-                                        <b v-else class="font-size-14">n/a</b>
-                                      </div>
-                                      <div class="font-size-16 mb-1">
-                                        <span
-                                          v-if="y.status == 'PENDING'"
-                                          class="
-                                            badge
-                                            bg-warning bg-soft
-                                            text-warning
-                                          "
-                                          ><b>{{ y.status }}</b></span
-                                        >
-                                        <span
-                                          v-if="y.status == 'POSTED'"
-                                          class="badge bg-success"
-                                          ><b>{{ y.status }}</b></span
-                                        >
-                                      </div>
-                                    </b-card-body>
-                                  </b-collapse> -->
                                   <!-- Attachments -->
                                   <b-card-body class="border">
                                     <div
@@ -1748,15 +1776,15 @@ export default {
                                 >
                                   <b-pagination
                                     v-model="row.item.currentPage"
-                                    :total-rows="propertyRows(row.item.details)"
-                                    :per-page="10"
+                                    :total-rows="propertyRows(row.item)"
+                                    :per-page="5"
                                   ></b-pagination>
                                 </ul>
                               </div>
                             </div>
                           </div>
                         </b-card>
-                      </transition>
+                      </b-collapse>
                     </template>
                   </b-table>
                 </div>
@@ -1792,6 +1820,14 @@ export default {
               class="needs-validation mt-3"
               ref="fcForm"
             >
+              <b-alert
+                :show="alert.type === 'warning'"
+                dismissible
+                @dismissed="alert.type = ''"
+                variant="warning"
+              >
+                <i class="mdi mdi-alert-outline me-2"></i>{{ alert.message }}
+              </b-alert>
               <b-row class="mb-2">
                 <b-col sm="6">
                   <div class="d-flex align-items-center">
@@ -1847,50 +1883,48 @@ export default {
                             >
                           </div>
                         </div>
-                        <div class="row mb-3">
-                          <div class="col-md-8">
-                            <label for="brand">Brand </label>
-                            <input
-                              id="brand"
-                              type="text"
-                              v-model="form.brand"
-                              placeholder="Enter Brand..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid': submitted && $v.form.brand.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.brand.$error"
-                              class="invalid-feedback"
+                        <div class="mb-3">
+                          <label for="brand">Brand </label>
+                          <input
+                            id="brand"
+                            type="text"
+                            v-model="form.brand"
+                            placeholder="Enter Brand..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid': submitted && $v.form.brand.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.brand.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.brand.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.brand.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
-                          <div class="col-md-4">
-                            <label for="model">Model </label>
-                            <input
-                              id="model"
-                              type="text"
-                              v-model="form.model"
-                              placeholder="Enter Model..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid': submitted && $v.form.model.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.model.$error"
-                              class="invalid-feedback"
+                        </div>
+                        <div class="mb-3">
+                          <label for="model">Model </label>
+                          <input
+                            id="model"
+                            type="text"
+                            v-model="form.model"
+                            placeholder="Enter Model..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid': submitted && $v.form.model.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.model.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.model.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.model.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
                         </div>
                         <div class="mb-3">
@@ -1899,7 +1933,7 @@ export default {
                           </label>
                           <textarea
                             id="specification"
-                            rows="2"
+                            rows="6"
                             v-model="form.specification"
                             placeholder="Enter Property Specification..."
                             class="form-control"
@@ -1918,57 +1952,54 @@ export default {
                             >
                           </div>
                         </div>
-                        <div class="row mb-3">
-                          <div class="col-md-4">
-                            <label for="color">Color </label>
-                            <input
-                              id="color"
-                              type="text"
-                              v-model="form.color"
-                              placeholder="Enter Property Color..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid': submitted && $v.form.color.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.color.$error"
-                              class="invalid-feedback"
+                        <div class="mb-3">
+                          <label for="color">Color </label>
+                          <input
+                            id="color"
+                            type="text"
+                            v-model="form.color"
+                            placeholder="Enter Property Color..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid': submitted && $v.form.color.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.color.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.color.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.color.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
-                          <div class="col-md-8">
-                            <label for="dimensionDescription"
-                              >Dimension Description
-                            </label>
-                            <input
-                              id="dimensionDescription"
-                              type="text"
-                              v-model="form.dimensionDescription"
-                              placeholder="Enter Dimension Description..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid':
-                                  submitted &&
-                                  $v.form.dimensionDescription.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="
-                                submitted && $v.form.dimensionDescription.$error
-                              "
-                              class="invalid-feedback"
+                        </div>
+                        <div class="mb-3">
+                          <label for="dimensionDescription"
+                            >Dimension Description
+                          </label>
+                          <input
+                            id="dimensionDescription"
+                            type="text"
+                            v-model="form.dimensionDescription"
+                            placeholder="Enter Dimension Description..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid':
+                                submitted &&
+                                $v.form.dimensionDescription.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="
+                              submitted && $v.form.dimensionDescription.$error
+                            "
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.dimensionDescription.required"
+                              >This value is required.</span
                             >
-                              <span
-                                v-if="!$v.form.dimensionDescription.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
                         </div>
                         <div class="mb-3">
@@ -2000,7 +2031,7 @@ export default {
                           </label>
                           <textarea
                             id="packageDescription"
-                            rows="4"
+                            rows="6"
                             v-model="form.packageDescription"
                             placeholder="Enter Package Description..."
                             class="form-control"
@@ -2023,75 +2054,73 @@ export default {
                         </div>
                       </div>
                       <div class="col-md-6">
-                        <div class="row mb-3">
-                          <div class="col-md-4">
-                            <label for="poNumber">P.O Number </label>
-                            <input
-                              id="poNumber"
-                              type="text"
-                              v-model="form.poNumber"
-                              placeholder="Enter PO Number..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid':
-                                  submitted && $v.form.poNumber.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.poNumber.$error"
-                              class="invalid-feedback"
+                        <div class="mb-3">
+                          <label for="poNumber">P.O. Number </label>
+                          <input
+                            id="poNumber"
+                            type="text"
+                            v-model="form.poNumber"
+                            placeholder="Enter PO Number..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid':
+                                submitted && $v.form.poNumber.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.poNumber.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.poNumber.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.poNumber.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
-                          <div class="col-md-4">
-                            <label for="propertyNumber">Property Number </label>
-                            <input
-                              id="propertyNumber"
-                              type="text"
-                              v-model="form.propertyNumber"
-                              placeholder="Enter Property Number..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid':
-                                  submitted && $v.form.propertyNumber.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.propertyNumber.$error"
-                              class="invalid-feedback"
+                        </div>
+                        <div class="mb-3">
+                          <label for="propertyNumber">Property Number </label>
+                          <input
+                            id="propertyNumber"
+                            type="text"
+                            v-model="form.propertyNumber"
+                            placeholder="Enter Property Number..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid':
+                                submitted && $v.form.propertyNumber.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.propertyNumber.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.propertyNumber.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.propertyNumber.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
-                          <div class="col-md-4">
-                            <label for="serialNumber">Serial Number </label>
-                            <input
-                              id="serialNumber"
-                              type="text"
-                              v-model="form.serialNumber"
-                              placeholder="Enter Serial Number..."
-                              class="form-control"
-                              :class="{
-                                'is-invalid':
-                                  submitted && $v.form.serialNumber.$error,
-                              }"
-                              autocomplete="off"
-                            />
-                            <div
-                              v-if="submitted && $v.form.serialNumber.$error"
-                              class="invalid-feedback"
+                        </div>
+                        <div class="mb-3">
+                          <label for="serialNumber">Serial Number </label>
+                          <input
+                            id="serialNumber"
+                            type="text"
+                            v-model="form.serialNumber"
+                            placeholder="Enter Serial Number..."
+                            class="form-control"
+                            :class="{
+                              'is-invalid':
+                                submitted && $v.form.serialNumber.$error,
+                            }"
+                            autocomplete="off"
+                          />
+                          <div
+                            v-if="submitted && $v.form.serialNumber.$error"
+                            class="invalid-feedback"
+                          >
+                            <span v-if="!$v.form.serialNumber.required"
+                              >This value is required.</span
                             >
-                              <span v-if="!$v.form.serialNumber.required"
-                                >This value is required.</span
-                              >
-                            </div>
                           </div>
                         </div>
                         <div class="row mb-3">
@@ -2144,7 +2173,7 @@ export default {
                         <div class="row mb-3">
                           <div class="col-md-4">
                             <label for="lifespanInYears"
-                              >Life Span in Yrs.
+                              >Life Span in Years
                             </label>
                             <masked-input
                               id="lifespanInYears"
@@ -2361,17 +2390,28 @@ export default {
                         </div>
                         <div class="mb-3">
                           <label for="unit">Unit </label>
-                          <input
-                            id="unit"
-                            type="text"
-                            v-model="form.unit"
-                            placeholder="Enter Unit..."
-                            class="form-control"
-                            :class="{
-                              'is-invalid': submitted && $v.form.unit.$error,
-                            }"
-                            autocomplete="off"
-                          />
+                          <b-input-group>
+                            <template #append>
+                              <b-button
+                                @click="getUnit()"
+                                variant="outline-info"
+                                ><i
+                                  class="mdi mdi-clipboard-text-search-outline"
+                                ></i
+                              ></b-button>
+                            </template>
+                            <input
+                              autocomplete="off"
+                              type="text"
+                              disabled
+                              placeholder="Search Unit..."
+                              class="form-control"
+                              :class="{
+                                'is-invalid': submitted && $v.form.unit.$error,
+                              }"
+                              v-model="form.unit"
+                            />
+                          </b-input-group>
                           <div
                             v-if="submitted && $v.form.unit.$error"
                             class="invalid-feedback"
@@ -2385,7 +2425,7 @@ export default {
                           <label for="note">Notes </label>
                           <textarea
                             id="note"
-                            rows="2"
+                            rows="4"
                             v-model="form.note"
                             placeholder="Enter Notes..."
                             class="form-control"
@@ -2415,5 +2455,6 @@ export default {
     </div>
     <item-category @dropData="dropItemCat($event)"></item-category>
     <supplier @dropData="dropSupplier($event)"></supplier>
+    <unit ref="unit" @dropData="dropUnit($event)"></unit>
   </Layout>
 </template>

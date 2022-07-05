@@ -207,6 +207,7 @@ export default {
             },
             subType: "",
             budgetCopy: 0,
+            groupedBudget: []
         };
     },
     validations: {
@@ -264,7 +265,7 @@ export default {
             }
         },
         filteredBudget() {
-            let data = this.budgetData;
+            let data = this.groupedBudget;
             var total = this.currentPageBudget * this.perPageBudget;
             if (this.filterBudget.trim() != "" && this.filterBudget) {
                 data = data.filter((item) => {
@@ -284,7 +285,7 @@ export default {
             if (this.filterBudget.trim() != "" && this.filterBudget) {
                 return this.filteredBudget.length;
             } else {
-                return this.budgetData.length;
+                return this.groupedBudget.length;
             }
         },
         filteredResourceItems() {
@@ -657,6 +658,7 @@ export default {
                         item.accountGroup =
                             item.objectOfExpenditure.account.accountGroup.groupName;
                     });
+                    this.budgetData = res.data;
                     var groupedFS = groupBy(res.data, "fundSource");
                     var grouped = [];
                     var id = 1;
@@ -696,7 +698,7 @@ export default {
                             showData: false,
                         });
                     }
-                    this.budgetData = grouped;
+                    this.groupedBudget = grouped;
                     this.budgetBusy = false;
                 })
                 .catch((err) => {
@@ -715,7 +717,7 @@ export default {
             this.selectedBudgetId = row.id;
             this.selectedBudgetAmount = row.balance;
             this.selectedResourceStatus = row.status;
-            this.budgetIndex = this.budgetData.indexOf(row);
+            this.budgetIndex = this.budgetData.findIndex(x => x.id == row.id);
             this.title = "Resource Item Details";
             this.$refs.carousel.goToPage(this.$refs.carousel.getNextPage());
             this.budgetCopy = this.totalBudget;
@@ -741,6 +743,8 @@ export default {
         },
         addNewItem() {
             this.onResetResourceItem();
+            console.log(this.budgetData[this.budgetIndex])
+            console.log(this.budgetIndex)
             this.selectedBudgetAmount = cloneDeep(
                 this.budgetData[this.budgetIndex].balance
             );

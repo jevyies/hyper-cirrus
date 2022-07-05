@@ -64,6 +64,13 @@ export default {
     deleteItem(row) {
       this.$emit("deleteItem", row);
     },
+    filterTable(row, filter) {
+      if (row.account.accountName.toLowerCase().includes(filter)) {
+        return true;
+      } else {
+        return false;
+      }
+    },
   },
   computed: {
     rows() {
@@ -75,6 +82,37 @@ export default {
 
 <template>
   <div>
+    <div class="row">
+      <div class="col-sm-12 col-md-6">
+        <div id="tickets-table_length" class="dataTables_length">
+          <label class="d-inline-flex align-items-center">
+            Show&nbsp;
+            <b-form-select
+              class="form-select form-select-sm mx-1"
+              v-model="perPage"
+              size="sm"
+              :options="pageOptions"
+            ></b-form-select
+            >&nbsp;entries
+          </label>
+        </div>
+      </div>
+      <!-- Search -->
+      <div class="col-sm-12 col-md-6">
+        <div id="tickets-table_filter" class="dataTables_filter text-md-end">
+          <label class="d-inline-flex align-items-center">
+            Search:
+            <b-form-input
+              v-model="filter"
+              type="search"
+              placeholder="Search account name..."
+              class="form-control form-control-sm ms-2"
+            ></b-form-input>
+          </label>
+        </div>
+      </div>
+      <!-- End search -->
+    </div>
     <div class="table-responsive mb-0">
       <b-table
         class="datatable table-sm"
@@ -86,7 +124,7 @@ export default {
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
         :filter="filter"
-        :filter-included-fields="filterOn"
+        :filter-function="filterTable"
         :busy="tableBusy"
         @filtered="onFiltered"
         bordered

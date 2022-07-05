@@ -3,9 +3,10 @@ import Layout from "../../layouts/main";
 import PageHeader from "@/components/page-header";
 import Swal from "sweetalert2";
 import { cloneDeep } from "lodash";
-import { required, email } from "vuelidate/lib/validators";
+import { required } from "vuelidate/lib/validators";
 import Multiselect from "vue-multiselect";
 import UserACcount from "@/components/widgets/useraccount";
+import UserAccess from "@/components/modals/user-access";
 
 export default {
   page: {
@@ -16,6 +17,7 @@ export default {
     PageHeader,
     Multiselect,
     UserACcount,
+    UserAccess
   },
   data() {
     return {
@@ -596,6 +598,10 @@ export default {
         .catch((err) => {
           this.showToast("Something went wrong!", "error");
         });
+    },
+    viewUserAccess(row){
+      this.$refs.userAccess.getData(row.item.applicationUser.id);
+      this.$bvModal.show('user-access-modal');
     }
   },
 };
@@ -1068,7 +1074,12 @@ export default {
                         ><i class="bx bx-menu-alt-left font-size-18 me-1"></i>View
                         Technical Categories</b-dropdown-item
                       >
+                      <b-dropdown-item @click="viewUserAccess(row)" variant="dark"
+                        ><i class="bx bx-menu-alt-left font-size-18 me-1"></i>View
+                        User Access</b-dropdown-item
+                      >
                     </b-dropdown>
+                    
                   </div>
                 </template>
                 <template #row-details="row">
@@ -1167,6 +1178,7 @@ export default {
     <b-modal v-model="accountModal" hide-footer>
       <UserACcount :record="selectedData" @close="refresh" />
     </b-modal>
+    <user-access ref="userAccess"></user-access>
     <!-- Modals -->
   </Layout>
 </template>

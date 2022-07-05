@@ -14,15 +14,15 @@ export default {
       filterOn: [],
       sortDesc: false,
       fields: [
-        {
-          key: "id",
-          sortable: true,
-          tdClass: "col-md-1",
-        },
+        // {
+        //   key: "id",
+        //   sortable: true,
+        //   tdClass: "col-md-1",
+        // },
         {
           key: "serialNumber",
           sortable: true,
-          tdClass: "col-md-1",
+          tdClass: "col-md-2",
         },
 
         {
@@ -175,8 +175,11 @@ export default {
                 </p>
               </template>
               <template #cell(details)="row">
-                <a v-b-toggle="`collapse-${row.item.id}`" href="javascript:void(0)"
-                  ><i class="bx bx-chevron-down"></i> View Details</a
+                <a
+                  v-b-toggle="`collapse-${row.item.id}`"
+                  href="javascript:void(0)"
+                  class="text-info"
+                  ><i class="bx bxs-file-blank font-size-15"></i> View Details</a
                 >
                 <b-collapse :id="`collapse-${row.item.id}`" class="mt-2">
                   <b-card>

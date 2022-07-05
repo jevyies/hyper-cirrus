@@ -2,9 +2,14 @@
 import Swal from "sweetalert2";
 import { cloneDeep } from "lodash";
 import { required } from "vuelidate/lib/validators";
+import createNumberMask from "text-mask-addons/dist/createNumberMask";
+import MaskedInput from "vue-text-mask";
 
 export default {
     name: "IndicatorItemClassification",
+    components: {
+        MaskedInput,
+    },
     data() {
         return {
             submitted: false,
@@ -18,6 +23,10 @@ export default {
             filterOn: [],
             sortBy: "classification",
             sortDesc: false,
+            currencyMask: createNumberMask({
+                prefix: "",
+                allowDecimal: true,
+            }),
             fields: [
                 {
                     key: "classification",
@@ -80,11 +89,13 @@ export default {
             if (this.$v.$invalid) {
                 return;
             } else {
+                var data = cloneDeep(this.form);
+                data.weight = this.getExactAmt(this.form.weight)
                 if (this.form.id > 0) {
                     this.$store
                         .dispatch(
-                            "indicatoritemclassification/UpdateApiClassification",
-                            this.form
+                            "indicatoritemclassification/UpdateIndicatorItemClassification",
+                            data
                         )
                         .then((res) => {
                             this.tableData.splice(
@@ -102,7 +113,7 @@ export default {
                     this.$store
                         .dispatch(
                             "indicatoritemclassification/CreateApiClassification",
-                            this.form
+                            data
                         )
                         .then((res) => {
                             this.tableData.push(res.data);
@@ -118,6 +129,7 @@ export default {
         },
         updateItem(props) {
             this.form = cloneDeep(props.item);
+            this.form.weight = props.item.weight.toString();
             this.indexSelected = this.tableData.indexOf(props.item);
             this.modalTitle = "Update API Classification";
             this.$bvModal.show("ac-modal");
@@ -217,7 +229,7 @@ export default {
                 </div>
                 <div class="mb-3">
                     <label for="weight">Weight </label>
-                    <input
+                    <masked-input
                         autocomplete="off"
                         id="weight"
                         type="text"
@@ -227,7 +239,8 @@ export default {
                         :class="{
                             'is-invalid': submitted && $v.form.weight.$error,
                         }"
-                    />
+                        :mask="currencyMask"
+                    ></masked-input>
                     <div
                         v-if="submitted && $v.form.weight.$error"
                         class="invalid-feedback"

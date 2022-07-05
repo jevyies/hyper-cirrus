@@ -15,6 +15,9 @@ export const actions = {
     GetInspectionIarAvailable(context, data){
         return axios.get(`Inspection/Iar/Available/${data}`);
     },
+    GetInspectionIarCancelled(context, data){
+        return axios.get(`Inspection/Iar/Cancelled/${data}`);
+    },
     CreateInspectionIar(context, data){
         return axios.post(`Inspection/Iar/Create`, data);
     },

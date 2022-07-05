@@ -2,9 +2,14 @@
 import Swal from "sweetalert2";
 import { cloneDeep } from "lodash";
 import { required } from "vuelidate/lib/validators";
+import createNumberMask from "text-mask-addons/dist/createNumberMask";
+import MaskedInput from "vue-text-mask";
 
 export default {
     name: "ApiType",
+    components: {
+        MaskedInput,
+    },
     data() {
         return {
             submitted: false,
@@ -18,6 +23,10 @@ export default {
             filterOn: [],
             sortBy: "type",
             sortDesc: false,
+            currencyMask: createNumberMask({
+                prefix: "",
+                allowDecimal: true,
+            }),
             fields: [
                 {
                     key: "type",
@@ -55,7 +64,6 @@ export default {
     validations: {
         form: {
             type: { required },
-            description: { required },
             points: { required },
         },
     },
@@ -85,9 +93,11 @@ export default {
             if (this.$v.$invalid) {
                 return;
             } else {
+                var data = cloneDeep(this.form);
+                data.points = this.getExactAmt(this.form.points)
                 if (this.form.id > 0) {
                     this.$store
-                        .dispatch("apitype/UpdateApiType", this.form)
+                        .dispatch("apitype/UpdateApiType", data)
                         .then((res) => {
                             this.tableData.splice(
                                 this.indexSelected,
@@ -102,7 +112,7 @@ export default {
                         });
                 } else {
                     this.$store
-                        .dispatch("apitype/CreateApiType", this.form)
+                        .dispatch("apitype/CreateApiType", data)
                         .then((res) => {
                             this.tableData.push(res.data);
                             this.$bvModal.hide("at-modal");
@@ -117,6 +127,7 @@ export default {
         },
         updateItem(props) {
             this.form = cloneDeep(props.item);
+            this.form.points = props.item.points.toString();
             this.indexSelected = this.tableData.indexOf(props.item);
             this.modalTitle = "Update API Type";
             this.$bvModal.show("at-modal");
@@ -213,23 +224,11 @@ export default {
                         v-model="form.description"
                         placeholder="Enter Description..."
                         class="form-control"
-                        :class="{
-                            'is-invalid':
-                                submitted && $v.form.description.$error,
-                        }"
                     />
-                    <div
-                        v-if="submitted && $v.form.description.$error"
-                        class="invalid-feedback"
-                    >
-                        <span v-if="!$v.form.description.required"
-                            >This value is required.</span
-                        >
-                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="points">Points </label>
-                    <input
+                    <masked-input
                         autocomplete="off"
                         id="points"
                         type="text"
@@ -239,7 +238,7 @@ export default {
                         :class="{
                             'is-invalid': submitted && $v.form.points.$error,
                         }"
-                    />
+                    ></masked-input>
                     <div
                         v-if="submitted && $v.form.points.$error"
                         class="invalid-feedback"

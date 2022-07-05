@@ -13,10 +13,10 @@ export default {
       filterOn: [],
       sortDesc: false,
       fields: [
-        {
-          key: "id",
-          sortable: true,
-        },
+        // {
+        //   key: "id",
+        //   sortable: true,
+        // },
         {
           key: "fundSource",
           label: "Fund Source",
