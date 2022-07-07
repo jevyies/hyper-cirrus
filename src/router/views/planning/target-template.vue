@@ -42,7 +42,10 @@ export default {
                 allowDecimal: true,
             }),
             createNew: false,
+            updateMode: false,
             filterTemplate: "",
+            tableBusy: false,
+            indexSelected: -1,
             tableData: [],
             indicators: [],
             indicatorItems: [],
@@ -119,6 +122,20 @@ export default {
                 this.form.points &&
                 this.form.indicatorItemId > 0 &&
                 this.selectedDU.length > 0
+            ) {
+                return true;
+            }
+            return false;
+        },
+        isUpdateable() {
+            if (
+                this.form.description &&
+                this.form.q1 &&
+                this.form.q2 &&
+                this.form.q3 &&
+                this.form.q4 &&
+                this.form.points &&
+                this.form.indicatorItemId > 0
             ) {
                 return true;
             }
@@ -213,6 +230,7 @@ export default {
     },
     methods: {
         async getAllTemplate() {
+            this.tableBusy = true;
             await this.$store
                 .dispatch("targettemplate/GetTargetTemplate")
                 .then((res) => {
@@ -220,6 +238,7 @@ export default {
                         item.filterKey = `${item.indicatorItem.indicatorItemName} ${item.description}`;
                     })
                     this.tableData = res.data;
+                    this.tableBusy = false;
                 })
                 .catch(() => {
                     this.showToast(
@@ -411,10 +430,6 @@ export default {
         },
         async saveChanges() {
             this.submitted = true;
-            this.form.deliveryUnitIds = [];
-            this.selectedDU.forEach((item) => {
-                this.form.deliveryUnitIds.push(item.id);
-            });
             if (this.form.id > 0) {
                 var data = cloneDeep(this.form);
                 await this.$store
@@ -426,6 +441,7 @@ export default {
                                 "error"
                             );
                         }
+                        console.log(res.data)
                         this.tableData.splice(this.indexSelected, 1, res.data);
                         this.showToast("Successfully updated!", "success");
                     })
@@ -433,6 +449,10 @@ export default {
                         this.showToast("Something went wrong!", "error");
                     });
             } else {
+                this.form.deliveryUnitIds = [];
+                this.selectedDU.forEach((item) => {
+                    this.form.deliveryUnitIds.push(item.id);
+                });
                 await this.$store
                     .dispatch(`targettemplate/CreateTargetTemplate`, this.form)
                     .then(async (res) => {
@@ -442,6 +462,9 @@ export default {
                                 "error"
                             );
                         }
+                        res.data.targetTemplateDeliveryUnits.forEach(item => {
+                            item.deliveryUnit = this.selectedDU.find(du => du.id == item.deliveryUnitId);
+                        })
                         this.tableData.push(res.data);
                         this.showToast("Successfully created!", "success");
                     })
@@ -504,7 +527,21 @@ export default {
                 });
         },
         updateItem(row){
-
+            this.indexSelected = this.tableData.indexOf(row);
+            this.updateMode = true;
+            this.createNew = true;
+            this.form = {
+                id: row.id,
+                indicatorItemId: row.indicatorItemId,
+                description: row.description,
+                q1: row.q1.toString(),
+                q2: row.q2.toString(),
+                q3: row.q3.toString(),
+                q4: row.q4.toString(),
+                points: row.points.toString(),
+            }
+            this.selectedIndicator = this.indicators.find(indicator => indicator.id == row.indicatorItem.indicatorId).indicatorName;
+            this.selectedIndicatorItem = row.indicatorItem.indicatorItemName;
         }
     },
 };
@@ -541,6 +578,14 @@ export default {
                     </button>
                     <button
                         type="button"
+                        v-if="isUpdateable"
+                        class="btn btn-success"
+                        @click="saveChanges"
+                    >
+                        <i class="bx bx-save"></i> Save Changes
+                    </button>
+                    <button
+                        type="button"
                         class="btn btn-link"
                         v-if="createNew"
                         @click="createNew = false"
@@ -550,7 +595,7 @@ export default {
                 </div>
             </div>
             <div class="row" v-if="createNew">
-                <div class="col-md-4">
+                <div :class="{'col-md-6': updateMode, 'col-md-4': !updateMode}">
                     <div class="card">
                         <div class="card-header bg-purple text-center">
                             <h4 class="card-title font-size-18 mb-0">
@@ -738,7 +783,7 @@ export default {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" v-if="!updateMode">
                     <div class="card">
                         <div class="card-header bg-purple text-center">
                             <h4 class="card-title font-size-18 mb-0">
@@ -986,7 +1031,7 @@ export default {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div :class="{'col-md-6': updateMode, 'col-md-4': !updateMode}">
                     <div class="card">
                         <div class="card-header bg-purple text-center">
                             <h4 class="card-title font-size-18 mb-0">
@@ -1277,8 +1322,11 @@ export default {
                             </div>
                         </div>
                     </div> -->
-                    <div class="col-md-12" v-if="tableData.length == 0">
+                    <div class="col-md-12" v-if="tableData.length == 0 && !tableBusy">
                         <h5>No template created yet</h5>
+                    </div>
+                    <div class="col-md-12" v-if="tableBusy">
+                        <h5>Loading...</h5>
                     </div>
                     <div class="col-md-12" v-if="tableData.length > 0 && filteredTemplate.length == 0">
                         <h5>Search not found</h5>
@@ -1528,7 +1576,7 @@ export default {
                                                 ></i>
                                             </template>
                                             <b-dropdown-item
-                                                @click="updateItem(row)"
+                                                @click="updateItem(x)"
                                                 variant="secondary"
                                                 ><i
                                                     class="

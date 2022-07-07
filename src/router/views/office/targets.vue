@@ -338,16 +338,15 @@ export default {
             this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/Campus/PPMP', routeVariables: [this.$store.state.data.cycle]})
             this.$bvModal.show('print-options-modal')
         },
-        async printDUOPCR(){
-            this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/DU/OPCR', routeVariables: [this.$store.state.data.cycle]})
-            this.$bvModal.show('print-options-modal')
+        async printPPMPDU(){
+             this.$refs.printOpt.putOptions({
+                apiUrl: "api/Api/Print/My/PPMP",
+                routeVariables: [this.$store.state.data.cycle],
+            });
+            this.$bvModal.show("print-options-modal");
         },
         async printDULIB(){
             this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/LIB/DeliveryUnit', routeVariables: [this.$store.state.data.cycle]})
-            this.$bvModal.show('print-options-modal')
-        },
-        async printCampusLIB(){
-            this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/LIB/Campus', routeVariables: [this.$store.state.data.cycle]})
             this.$bvModal.show('print-options-modal')
         },
     },
@@ -660,9 +659,8 @@ export default {
                                     <i class="bx bx-printer me-1"></i> Reports
                                 </template>
                                 <b-dropdown-item @click="printPPMPCampus()">PPMP by Campus</b-dropdown-item>
-                                <b-dropdown-item @click="printDUOPCR()">OPCR by Delivery Unit</b-dropdown-item>
+                                <b-dropdown-item @click="printPPMPDU()">PPMP by Delivery Unit</b-dropdown-item>
                                 <b-dropdown-item @click="printDULIB()">Delivery Unit LIB</b-dropdown-item>
-                                <b-dropdown-item @click="printCampusLIB()">Campus LIB</b-dropdown-item>
                             </b-dropdown>
                         </div>
                         <div class="row mt-4">

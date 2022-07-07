@@ -1282,12 +1282,9 @@ export default {
             }
             return data;
         },
-        async printPPMP() {
-            this.$refs.printOpt.putOptions({
-                apiUrl: "api/Api/Print/My/PPMP",
-                routeVariables: [this.$store.state.data.cycle],
-            });
-            this.$bvModal.show("print-options-modal");
+        async printOPCR() {
+            this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/DU/OPCR', routeVariables: [this.$store.state.data.cycle]})
+            this.$bvModal.show('print-options-modal')
         },
     },
 };
@@ -1784,12 +1781,12 @@ export default {
                                                     btn-sm
                                                     btn-outline-purple
                                                 "
-                                                @click="printPPMP()"
+                                                @click="printOPCR()"
                                             >
                                                 <i
                                                     class="bx bx-printer me-1"
                                                 ></i
-                                                >Print PPMP
+                                                >Print OPCR
                                             </button>
                                         </div>
                                         <input

@@ -1093,6 +1093,9 @@ textarea.planning.custom-inline-form {
 body.modal-open #page-topbar {
   top: -70px !important;
 }
+body.swal2-shown  #page-topbar {
+  top: -70px !important;
+}
 .action-top-right {
   right: 0;
   top: 0;

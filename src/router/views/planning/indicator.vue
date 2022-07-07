@@ -9,6 +9,7 @@ import Sortable from "sortablejs";
 import createNumberMask from "text-mask-addons/dist/createNumberMask";
 import MaskedInput from "vue-text-mask";
 import ApiClassification from "@/components/modals/api-classification.vue";
+import PrintOptions from "@/components/modals/print-options.vue";
 
 const createSortable = (el, options) => {
     return Sortable.create(el, {
@@ -38,6 +39,7 @@ export default {
         Multiselect,
         MaskedInput,
         ApiClassification,
+        PrintOptions,
     },
     data() {
         let self = this;
@@ -523,6 +525,14 @@ export default {
             this.indicatorItemClassification = data;
             this.indicatorForm.indicatorItemClassificationId = data.id;
         },
+        async printCampusLIB(){
+            this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/LIB/Campus', routeVariables: [this.$store.state.data.cycle]})
+            this.$bvModal.show('print-options-modal')
+        },
+        async printSystemLIB(){
+            this.$refs.printOpt.putOptions({apiUrl: 'api/Target/Print/LIB/System', routeVariables: [this.$store.state.data.cycle]})
+            this.$bvModal.show('print-options-modal')
+        },
     },
 };
 </script>
@@ -805,6 +815,22 @@ export default {
                             <h4 class="card-title m-0">
                                 Indicator Groups & Goals
                             </h4>
+                            <div class="d-flex">
+                                <b-dropdown
+                                    id="dropdown-dropleft"
+                                    right
+                                    variant="purple"
+                                    toggle-class="text-decoration-none"
+                                    menu-class="dropdown-menu-end"
+                                    no-caret
+                                    class="me-1"
+                                >
+                                    <template #button-content>
+                                        <i class="bx bx-printer me-1"></i> Reports
+                                    </template>
+                                    <b-dropdown-item @click="printCampusLIB()">Campus LIB</b-dropdown-item>
+                                    <b-dropdown-item @click="printSystemLIB()">System LIB</b-dropdown-item>
+                                </b-dropdown>
                             <button
                                 type="button"
                                 @click="addFC()"
@@ -816,6 +842,7 @@ export default {
                             >
                                 <i class="bx bx-plus fs-6"></i>Create New
                             </button>
+                            </div>
                             <b-modal
                                 id="modal-standard"
                                 :title="modalTitle"
@@ -1665,5 +1692,6 @@ export default {
             </div>
         </div>
         <api-classification @dropData="dropClass($event)"></api-classification>
+        <print-options ref="printOpt"></print-options>
     </Layout>
 </template>

@@ -1027,7 +1027,7 @@ export default {
                 </div>
             </b-tab>
         </b-tabs>
-        <div class="position-absolute" style="bottom: 100px; right: 100px">
+        <div class="position-fixed" style="bottom: 50px; right: 100px">
             <div
                 class="position-relative"
                 v-if="selectedAvailableItems.length > 0"

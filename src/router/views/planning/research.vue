@@ -140,7 +140,10 @@ export default {
             groupCampus: '',
             groupDU: '',
             allCampus: [],
-            allDU: []
+            allDU: [],
+            researchFrom: '',
+            researchTo: '',
+            print: false
         };
     },
     validations: {
@@ -626,6 +629,16 @@ export default {
             }else{
                 apiUrl = `api/Outcome/Print/Bar1/PhysicalReport/Operation/DeliveryUnit`
             }
+            this.$refs.printOpt.putOptions({apiUrl: apiUrl, routeVariables: routeVariables})
+            this.$bvModal.show('print-options-modal')
+        },
+        async printResearch(type, id){
+            this.print = true;
+            if(!this.researchFrom && !this.researchTo){
+                return;
+            }
+            var apiUrl = 'api/Research/Print/Bar1/Research/Campus';
+            let routeVariables = [this.researchFrom, this.researchTo, id];
             this.$refs.printOpt.putOptions({apiUrl: apiUrl, routeVariables: routeVariables})
             this.$bvModal.show('print-options-modal')
         }
@@ -1401,51 +1414,35 @@ export default {
                                     <p class="text-muted mb-0">Reports</p>
                                     <select class="form-select mt-2" v-model="reports">
                                         <option value="">Report By</option>
-                                        <option value="1">Campus</option>
-                                        <option value="2">Delivery Unit</option>
+                                        <option value="1">Physical Report Operations(Campus)</option>
+                                        <option value="2">Physical Report Operations(Delivery Unit)</option>
+                                        <option value="3">Research(Campus)</option>
                                     </select>
-                                    <div v-if="reports == 1">
+                                    <div v-if="reports == 1 || reports == 3">
                                         <select class="form-select mt-2 mb-2" v-model="groupCampus">
                                             <option value="">Select Campus</option>
                                             <option v-for="x in allCampus" :key="x.id" :value="x.id">{{x.campusName}}</option>
                                         </select>
-                                        <b-dropdown
-                                            id="dropdown-dropleft"
-                                            right
-                                            variant="outline-purple"
-                                            toggle-class="text-decoration-none"
-                                            menu-class="dropdown-menu-end"
-                                            no-caret
-                                            class="w-100"
-                                            v-if="groupCampus > 0"
-                                        >
-                                            <template #button-content>
-                                                <i class="bx bx-printer me-1"></i> Reports for Bar 1 Campus
-                                            </template>
-                                            <!-- <b-dropdown-item @click="printBar1Research('campus', groupCampus)">Research</b-dropdown-item> -->
-                                            <b-dropdown-item @click="printBar1PRO('campus', groupCampus)">Physical Report Operations</b-dropdown-item>
-                                        </b-dropdown>
+                                        <div v-if="reports == 3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-2">
+                                                    <input type="text" class="form-control" placeholder="Start Year" v-model="researchFrom" :class="{'is-invalid': !researchFrom && print}">
+                                                </div>
+                                                to
+                                                <div class="ms-2">
+                                                    <input type="text" class="form-control" placeholder="End Year" v-model="researchTo" :class="{'is-invalid': !researchTo && print}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="printBar1PRO('campus', groupCampus)" class="btn btn-purple btn-block mt-2" v-if="groupCampus > 0 && reports == 1"><i class="bx bx-printer me-1"></i> Print Report</button>
+                                        <button type="button" @click="printResearch('campus', groupCampus)" class="btn btn-purple btn-block mt-2" v-if="groupCampus > 0 && reports == 3"><i class="bx bx-printer me-1"></i> Print Report</button>
                                     </div>
                                     <div v-if="reports == 2">
                                         <select class="form-select mt-2 mb-2" v-model="groupDU">
                                             <option value="">Select Delivery Unit</option>
                                             <option v-for="x in allDU" :key="x.id" :value="x.id">{{x.name}}</option>
                                         </select>
-                                        <b-dropdown
-                                            id="dropdown-dropleft"
-                                            right
-                                            variant="outline-purple"
-                                            toggle-class="text-decoration-none"
-                                            menu-class="dropdown-menu-end"
-                                            no-caret
-                                            class="w-100"
-                                            v-if="groupDU > 0"
-                                        >
-                                            <template #button-content>
-                                                <i class="bx bx-printer me-1"></i> Reports for Bar 1 Delivery Unit
-                                            </template>
-                                            <b-dropdown-item @click="printBar1PRO('du', groupDU)">Physical Report Operations</b-dropdown-item>
-                                        </b-dropdown>
+                                        <button type="button" @click="printBar1PRO('du', groupDU)" class="btn btn-purple btn-block mt-2" v-if="groupDU > 0 && reports == 2"><i class="bx bx-printer me-1"></i> Print Report</button>
                                     </div>
                                 </div>
                             </div>
