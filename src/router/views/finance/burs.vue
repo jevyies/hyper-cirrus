@@ -74,7 +74,11 @@ export default {
       this.fetchAvailable();
     },
     formatDate(data) {
-      return new Date(data).toLocaleDateString("en-US");
+      return new Date(data).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
     },
     /** create burs */
     createBurs(record) {
@@ -121,6 +125,7 @@ export default {
             .dispatch("burs/deleteBurs", record.id)
             .then(() => {
               this.pendings.splice(this.pendings.indexOf(record), 1);
+              this.fetchAvailable();
               this.$swal({
                 title: "Deleted!",
                 text: "BURS has been deleted.",
@@ -382,8 +387,6 @@ export default {
             rotateChevy: false,
             showDetails: false,
           }));
-          console.log(this.incoming);
-          // console.log(this.incoming.filter((item) => item.type.toLowerCase() === "po"));
         })
         .catch(() => {
           this.$swal({
@@ -399,6 +402,36 @@ export default {
         routeVariables: [id],
       });
       this.$bvModal.show("print-options-modal");
+    },
+    pushAttachments(record) {
+      if (record.type === "pending") {
+        /** push record.attachments to this.pendings */
+        this.pendings.find((item) => item.id === record.id).attachments = [];
+        this.pendings
+          .find((item) => item.id === record.id)
+          .attachments.push(...record.attachments);
+      }
+      if (record.type === "posted") {
+        /** push record.attachments to this.posted */
+        this.posted.find((item) => item.id === record.id).attachments = [];
+        this.posted
+          .find((item) => item.id === record.id)
+          .attachments.push(...record.attachments);
+      }
+    },
+    handleUpload(record) {
+      if (record.type === "pending") {
+        /** push record.attachments to this.pendings */
+        this.pendings
+          .find((item) => item.id === record.id)
+          .attachments.push(record.response);
+      }
+      if (record.type === "posted") {
+        /** push record.attachments to this.posted */
+        this.posted
+          .find((item) => item.id === record.id)
+          .attachments.push(record.response);
+      }
     },
   },
   created() {
@@ -448,6 +481,8 @@ export default {
           @remove="removeBURS"
           @post="postBURS"
           @printBurs="printBurs"
+          @pushAttachments="pushAttachments"
+          @handleUpload="handleUpload"
         />
       </b-tab>
       <b-tab>
@@ -463,6 +498,8 @@ export default {
           @return="returnBURS"
           @printBurs="printBurs"
           type="posted"
+          @pushAttachments="pushAttachments"
+          @handleUpload="handleUpload"
         />
       </b-tab>
     </b-tabs>

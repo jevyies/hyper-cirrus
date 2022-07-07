@@ -45,6 +45,7 @@ export default {
         uacsSubCode: null,
         coveringPpsas: null,
         accountGroupId: this.$route.params.id ? Number(this.$route.params.id) : null,
+        showInDisbursement: false,
       },
       selectedAG: null,
       totalRows: 1,
@@ -278,6 +279,9 @@ export default {
               ).coveringPpsas = this.account.coveringPpsas;
               this.accounts.find(
                 (item) => item.id === this.account.id
+              ).showInDisbursement = this.account.showInDisbursement;
+              this.accounts.find(
+                (item) => item.id === this.account.id
               ).accountGroupId = this.account.accountGroupId;
               this.modalOptions.show = false;
               this.onReset();
@@ -299,6 +303,7 @@ export default {
         uacsSubCode: null,
         coveringPpsas: null,
         accountGroupId: this.$route.params.id ? Number(this.$route.params.id) : null,
+        showInDisbursement: false,
       };
     },
     async printAccounts() {
@@ -533,6 +538,17 @@ export default {
           <span v-if="!$v.account.accountName.required">This value is required.</span>
         </div>
       </div>
+      <div class="form-check form-checkbox-outline form-check-primary mb-3">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="customCheckcolor1"
+          v-model="account.showInDisbursement"
+        />
+        <label class="form-check-label" for="customCheckcolor1">
+          Display this account in disbursement
+        </label>
+      </div>
       <div class="mb-3">
         <label for="accountName">UACS</label>
         <b-form-input id="accountName" v-model="account.uacs" placeholder="Enter UACS...">
@@ -557,6 +573,7 @@ export default {
         >
         </b-form-input>
       </div>
+
       <div class="mb-3">
         <label for="fundClassificaton">Account Group</label>
         <b-form-select

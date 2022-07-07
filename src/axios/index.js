@@ -160,16 +160,16 @@ planningAPI.interceptors.response.use(
 );
 
 function updateResponse({ method }, type) {
-  if (type === "request") {
-    if (
-      method.toLowerCase() === "post" ||
-      method.toLowerCase() === "put" ||
-      method.toLowerCase() === "delete"
-    ) {
+  if (
+    method.toLowerCase() === "post" ||
+    method.toLowerCase() === "put" ||
+    method.toLowerCase() === "delete"
+  ) {
+    if (type === "request") {
       document.getElementById("full-page-loader").classList.remove("d-none");
+    }else{
+      document.getElementById("full-page-loader").classList.add("d-none");
     }
-  } else {
-    document.getElementById("full-page-loader").classList.add("d-none");
   }
 }
 function decryptedUserData(encryptedText){

@@ -1,14 +1,12 @@
 <script>
 import { required } from "vuelidate/lib/validators";
-import { cloneDeep } from "lodash";
 
 export default {
     name: 'UserAccessList',
     props: {
         item: Object,
-        indexOfChild: Number,
+        indexOfMother: Number,
         mother: Object,
-        isChecked: Boolean,
     },
     data: function () {
         return {
@@ -26,15 +24,6 @@ export default {
             return this.item.childAccessLists && this.item.childAccessLists.length;
         },
     },
-    watch: {
-        isChecked(value){
-            if(value){
-                if(this.mother.parentId > 0){
-                    this.$emit('check-parent', {id: this.mother.parentId, value: true});
-                }
-            }
-        },
-    },
     methods: {
         toggle() {
             if (this.isFolder) {
@@ -42,30 +31,17 @@ export default {
             }
         },
         toggleCheck(value){
-            if(this.item.childAccessLists.length == 0 || !this.item.childAccessLists){
-                if(value){
-                    let checked = 0;
-                    this.mother.childAccessLists.forEach(item => {
-                        if(item.selected){
-                            checked++;
-                        }
-                    })
-                    if(checked > 0){
-                        this.mother.selected = true;
-                    }
-                }else{
-                    let unchecked = 0;
-                    this.mother.childAccessLists.forEach(item => {
-                        if(!item.selected){
-                            unchecked++;
-                        }
-                    })
-                    if(unchecked == this.mother.childAccessLists.length){
-                        this.mother.selected = false;
-                    }
+            if(this.item.childAccessLists.length > 0 || this.item.childAccessLists){
+                this.$emit('check-child', {item: this.item, value: value});
+            }
+            if(value){
+                if(this.item.parentId > 0){
+                    this.$emit('check-parent', {index: this.indexOfMother, item: this.item});
                 }
             }else{
-                this.$emit('check-child', {item: this.item, value: value});
+                if(this.item.parentId > 0){
+                    this.$emit('uncheck-parent', {index: this.indexOfMother, item: this.item})
+                }
             }
         },
     },
@@ -107,10 +83,10 @@ export default {
                 v-for="(child, index) in item.childAccessLists"
                 :key="index"
                 :item="child"
-                :indexOfChild="index"
+                :indexOfMother="indexOfMother"
                 :mother="item"
-                :isChecked="item.selected"
                 @check-parent="$emit('check-parent', $event)"
+                @uncheck-parent="$emit('uncheck-parent', $event)"
                 @check-child="$emit('check-child', $event)"
             ></user-access-list>
         </div>

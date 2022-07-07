@@ -20,5 +20,8 @@ export const actions = {
     },
     getAllAccounts(){
         return axios.get("/Finance/Accounts/All");
+    },
+    getAccountsForDisbursement(context){
+        return axios.get("/Finance/Accounts/Disbursement");
     }
 }

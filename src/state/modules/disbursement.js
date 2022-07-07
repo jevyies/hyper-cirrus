@@ -14,8 +14,8 @@ export const actions = {
     deleteDisbursement(context, id){
         return axios.delete(`/Finance/Disbursement/${id}`);
     },
-    postDisbursement(context, id){
-        return axios.put(`/Finance/Disbursement/Post/${id}`);
+    postDisbursement(context, {id, dateApproved}){
+        return axios.put(`/Finance/Disbursement/Post/${id}?dateApproved=${dateApproved}`);
     },
     approveDisbursement(context, id){
         return axios.put(`/Finance/Disbursement/Approve/${id}`);

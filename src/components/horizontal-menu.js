@@ -238,11 +238,18 @@ export const menuItems = [
         display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'kpi list' && x.AccessList.Type.toLowerCase() === 'planning') ? true : false,
       },
       {
-        id: 8,
+        id: 3,
         label: "API List",
         link: "/planning/api-list",
         parentId: 5,
         display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'api list' && x.AccessList.Type.toLowerCase() === 'planning') ? true : false,
+      },
+      {
+        id: 4,
+        label: "Target Template",
+        link: "/planning/target-template",
+        parentId: 5,
+        display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'target template' && x.AccessList.Type.toLowerCase() === 'planning') ? true : false,
       },
       {
         id: 5,
@@ -250,6 +257,13 @@ export const menuItems = [
         link: "/planning/research",
         parentId: 5,
         display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'research' && x.AccessList.Type.toLowerCase() === 'planning') ? true : false,
+      },
+      {
+        id: 6,
+        label: "Academic Programs",
+        link: "/planning/program",
+        parentId: 5,
+        display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'academic programs' && x.AccessList.Type.toLowerCase() === 'planning') ? true : false,
       },
       {
         id: 8,
@@ -336,24 +350,11 @@ export const menuItems = [
             id: 1,
             label: "Pending",
             link: "/property/register",
-            parentId: 1,
+            parentId: 2,
             display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'pending' && x.AccessList.Type.toLowerCase() === 'supply & assets') ? true : false,
           },
-          // {
-          //   id: 2,
-          //   label: "For Review",
-          //   link: "/property/review",
-          //   parentId: 7,
-          // },
           {
             id: 2,
-            label: "For Review",
-            link: "/property/review",
-            parentId: 7,
-            display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'for review' && x.AccessList.Type.toLowerCase() === 'supply & assets') ? true : false,
-          },
-          {
-            id: 3,
             label: "Un-assigned",
             link: "/property/unassigned",
             parentId: 2,
@@ -376,7 +377,7 @@ export const menuItems = [
         ]
       },
       {
-        id: 6,
+        id: 3,
         label: "Request for Payment",
         link: "/supply-and-assets/request-for-payment",
         parentId: 7,
@@ -385,18 +386,9 @@ export const menuItems = [
       {
         id: 4,
         label: "Settings",
+        link: "/property/settings",
         parentId: 7,
-        isUiElement: true,
         display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'settings' && x.AccessList.Type.toLowerCase() === 'supply & assets') ? true : false,
-        subItems: [
-          {
-            id: 1,
-            label: "Location",
-            link: "/property/location",
-            parentId: 1,
-            display: accessList.find(x => x.AccessList.Access.toLowerCase() === 'location' && x.AccessList.Type.toLowerCase() === 'supply & assets') ? true : false,
-          },
-        ]
       },
     ],
   },

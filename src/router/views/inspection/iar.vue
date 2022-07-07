@@ -50,7 +50,7 @@ export default {
       filterPosted: "",
       filterAvailable: "",
       filterCancelled: "",
-      pageOptions: [2, 25, 50, 100],
+      pageOptions: [10, 25, 50, 100],
       perPagePending: 10,
       perPagePosted: 10,
       perPageAvailable: 10,

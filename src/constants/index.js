@@ -19,6 +19,13 @@ Vue.prototype.formatDate = function(dt) {
   let da = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(dt);
   return `${mo} ${da}, ${ye}`;
 };
+Vue.prototype.formatDateShort = function(dt) {
+  if (dt == null) return "";
+  let ye = new Intl.DateTimeFormat("en", { year: "numeric" }).format(dt);
+  let mo = new Intl.DateTimeFormat("en", { month: "short" }).format(dt);
+  let da = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(dt);
+  return `${mo} ${da}, ${ye}`;
+};
 Vue.prototype.formatDateWithTime = function(dt) {
   if (dt == null) return "";
   let time = new Intl.DateTimeFormat("en", {
@@ -98,7 +105,7 @@ Vue.prototype.showToast = (message, type) => {
 Vue.prototype.numberWithCommas = (x) => {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
-Vue.prototype.decryptedUserData = (encryptedText) => {
+Vue.prototype.decryptToken = (encryptedText) => {
   var rawData = Vue.CryptoJS.enc.Base64.parse(encryptedText);
   var key = Vue.CryptoJS.enc.Latin1.parse(store.state.data.decipherCode);
   var plaintextData = Vue.CryptoJS.AES.decrypt(
@@ -111,5 +118,5 @@ Vue.prototype.decryptedUserData = (encryptedText) => {
       }
   );
   var plaintext = plaintextData.toString(Vue.CryptoJS.enc.Latin1);
-  return JSON.parse(plaintext)
+  return plaintext;
 }

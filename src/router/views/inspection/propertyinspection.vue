@@ -121,7 +121,6 @@ export default {
       .dispatch("property/GetSingleProperty", this.$route.params.id)
       .then((res) => {
         this.property = res.data;
-        console.log(res.data);
       })
       .catch(() => {
         this.showToast("Something went wrong getting property data!", "error");
@@ -140,7 +139,6 @@ export default {
           item.attachmentLoading = false;
           item.fileSearch = "";
         });
-        console.log(res);
         this.tableData = res.data;
       })
       .catch(() => {
@@ -156,7 +154,6 @@ export default {
       if (this.$v.$invalid) {
         return;
       } else {
-        console.log(this.form);
         this.form.inspectionDateTime = this.setDate(
           this.form.inspectionDateTime
         );
@@ -165,7 +162,6 @@ export default {
             .dispatch("propertyinspection/AddPropertyInspection", this.form)
             .then((res) => {
               if (res.data.error) {
-                console.log(res);
                 return this.showToast(res.data.errorMessage, "error");
               }
               this.showToast("Successfully created!", "success");
@@ -192,7 +188,6 @@ export default {
             .dispatch("propertyinspection/UpdatePropertyInspection", this.form)
             .then((res) => {
               if (res.data.error) {
-                console.log(res);
                 return this.showToast(res.data.errorMessage, "error");
               }
               this.showToast("Successfully created!", "success");
@@ -313,7 +308,6 @@ export default {
       this.$bvModal.show("modal-standard");
     },
     updateInspection(props) {
-      console.log(props);
       this.form = cloneDeep(props);
       this.form.inspectionDateTime = new Date(this.form.inspectionDateTime);
       this.form.employeeId = props.employeeId;

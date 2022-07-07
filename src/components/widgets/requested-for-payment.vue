@@ -30,8 +30,8 @@ export default {
           sortable: true,
         },
         {
-          key: "expenditure",
-          label: "Expenditure",
+          key: "particulars",
+          label: "Particulars",
           sortable: true,
         },
         {
@@ -106,6 +106,9 @@ export default {
         }
       });
     },
+    printRFP(id){
+      this.$emit('print-rfp', id);
+    }
   },
 };
 </script>
@@ -174,24 +177,19 @@ export default {
                   <span class="text-success">POSTED </span> on
                   <span> {{ formatDate(row.item.datePosted) }}</span>
                 </p>
+                <button type="button" class="btn btn-sm btn-purple" @click="printRFP(row.item.id)"><i class="bx bx-printer"></i> Print RFP</button>
               </div>
               <div class="text-center" v-if="row.item.status.toLowerCase() === 'pending'">
                 <b-button
                   variant="outline-info"
                   size="sm"
-                  class="px-3"
+                  class="px-3 me-1"
                   @click="postPayment(row.item)"
                 >
                   <i class="bx bx-log-in me-1"></i> Post</b-button
                 >
+                <button type="button" class="btn btn-sm btn-purple" @click="printRFP(row.item.id)"><i class="bx bx-printer"></i> Print RFP</button>
               </div>
-            </template>
-            <template #cell(expenditure)="row">
-              {{ row.item.rfpPaymentItem.deliveryUnitBudgetItem.objectOfExpenditure.account.accountName }}
-              -
-              <span class="badge badge-soft-success font-size-12">{{
-                row.item.rfpPaymentItem.deliveryUnitBudgetItem.objectOfExpenditure.fundSource.sourceName
-              }}</span>
             </template>
             <template #cell(amount)="row">
               <span class="text-warning">{{ formatCurrency(row.item.amount) }}</span>

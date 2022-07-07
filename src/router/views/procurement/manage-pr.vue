@@ -1174,7 +1174,7 @@ export default {
                                                             >Approve Purchase
                                                             Request
                                                         </button>
-                                                        <button
+                                                        <!-- <button
                                                             type="button"
                                                             class="
                                                                 btn btn-purple
@@ -1190,7 +1190,7 @@ export default {
                                                             ></i
                                                             >Print Purchase
                                                             Request
-                                                        </button>
+                                                        </button> -->
                                                     </div>
                                                 </b-card-body>
                                             </b-collapse>
@@ -1920,7 +1920,7 @@ export default {
                                                             >Return Purchase
                                                             Request
                                                         </button>
-                                                        <button
+                                                        <!-- <button
                                                             type="button"
                                                             class="
                                                                 btn btn-purple
@@ -1936,7 +1936,7 @@ export default {
                                                             ></i
                                                             >Print Purchase
                                                             Request
-                                                        </button>
+                                                        </button> -->
                                                     </div>
                                                 </b-card-body>
                                             </b-collapse>

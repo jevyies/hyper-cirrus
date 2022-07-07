@@ -10,21 +10,21 @@ export default {
         return {
             submitted: false,
             tableData: [],
-            checkAll: false,
             selectedItems: [],
             applicationUserId: '',
+            searchMother: [],
         };
     },
     created(){
-        this.tableBusy = true;
+        this.pageLoader(true);
         this.$store
             .dispatch("accesslist/GetAllAccessList")
             .then((res) => {
-                this.tableBusy = false;
                 this.tableData = res.data
+                this.pageLoader(false);
             })
             .catch((err) => {
-                this.tableBusy = false;
+                this.pageLoader(false);
                 this.showToast("Something went wrong!","error");
             });
     },
@@ -52,6 +52,7 @@ export default {
             })
         } ,
         getData(id){
+            this.pageLoader(true);
             this.applicationUserId = id;
             this.clearSelected();
             this.$store
@@ -59,9 +60,10 @@ export default {
                 .then((res) => {
                     this.userAccess = res.data;
                     this.checkIfExist(this.userAccess);
+                    this.pageLoader(false);
                 })
                 .catch((err) => {
-                    console.log(err)
+                    this.pageLoader(false);
                     this.showToast("Something went wrong!","error");
                 });
         },
@@ -121,15 +123,11 @@ export default {
                     this.showToast("Something went wrong!","error");
                 });
         },
-        recurseToCheck(node, id, value) {
+        recurseToCheck(node) {
             for(var i = 0, count = node.childAccessLists.length; i < count; i++) {
+                this.motherLevel++;
                 let item = node.childAccessLists[i];
-                if(item.id == id){
-                    item.selected = value;
-                }
-                if(item.parentId > 0){
-                    this.recurseToCheck(item, item.id, value);
-                }
+                this.recurseToCheck(item);
             }
         },
         recurseCheckChild(node, value) {
@@ -139,13 +137,56 @@ export default {
                 this.recurseCheckChild(item, value);
             }
         },
-        checkParent(data){
-            this.tableData.forEach(item => {
-                if(item.id == data.id){
-                    item.selected = true;
+        recurseCheckMother(node, id, value) {
+            for(var i = 0, count = node.childAccessLists.length; i < count; i++) {
+                let item = node.childAccessLists[i];
+                this.recurseCheckMother(item, id, value);
+            }
+        },
+        searchTree(element, matchingId){
+            if(element.id == matchingId){
+                return element;
+            }else if (element.childAccessLists != null && element.childAccessLists.length > 0){
+                var i;
+                var result = null;
+                for(i=0; result == null && i < element.childAccessLists.length; i++){
+                    result = this.searchTree(element.childAccessLists[i], matchingId);
                 }
-                this.recurseToCheck(item, data.id, data.value);
-            });
+                return result;
+            }
+            return null;
+        },
+        checkParent(data){
+            this.searchMother = this.tableData[data.index];
+            let item = this.searchTree(this.searchMother, data.item.parentId);
+            while (item !== null) {
+                item.selected = true;
+                if(item.parentId){
+                    item = this.searchTree(this.searchMother, item.parentId);
+                }else{
+                    item = null;
+                }
+            }
+        },
+        uncheckParent(data){
+            this.searchMother = this.tableData[data.index];
+            let item = this.searchTree(this.searchMother, data.item.parentId);
+            while (item !== null) {
+                let unchecked = 0;
+                item.childAccessLists.forEach(child => {
+                    if(!child.selected){
+                        unchecked++;
+                    }
+                })
+                if(unchecked == item.childAccessLists.length){
+                    item.selected = false;
+                }
+                if(item.parentId){
+                    item = this.searchTree(this.searchMother, item.parentId);
+                }else{
+                    item = null;
+                }
+            }
         },
         checkChild(data){
             this.recurseCheckChild(data.item, data.value)
@@ -168,12 +209,11 @@ export default {
             <user-access-list
                 class="item"
                 :item="x"
-                :indexOfChild="xIndex"
+                :indexOfMother="xIndex"
                 :newForm="false"
                 :mother="{motherList: true, id: x.id, childAccessLists: x.childAccessLists, selected: x.selected}"
-                :checkAll="checkAll"
-                :isChecked="x.selected"
                 @check-parent="checkParent($event)"
+                @uncheck-parent="uncheckParent($event)"
                 @check-child="checkChild($event)"
             ></user-access-list>
         </div>

@@ -68,6 +68,7 @@ export default {
             this.form = {
                 id: 0,
                 type: "",
+                priority: "",
             };
         },
         hideModal() {
@@ -214,17 +215,14 @@ export default {
                 </div>
                 <div class="mb-3">
                     <label for="priority">Priority </label>
-                    <input
-                        autocomplete="off"
-                        id="priority"
-                        type="text"
-                        v-model="form.priority"
-                        placeholder="Enter Priority..."
-                        class="form-control"
-                        :class="{
+                    <select class="form-select" id="priority" v-model="form.priority" :class="{
                             'is-invalid': submitted && $v.form.priority.$error,
-                        }"
-                    />
+                        }">
+                        <option value="" class="text-muted">Select Priority</option>
+                        <option value="Core">Core</option>
+                        <option value="Strategic">Strategic</option>
+                        <option value="Non-Class">Non-Class</option>
+                    </select>
                     <div
                         v-if="submitted && $v.form.priority.$error"
                         class="invalid-feedback"

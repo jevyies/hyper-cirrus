@@ -206,8 +206,32 @@ export default [
   {
     path: "/planning/program",
     name: "program",
-    meta: { authRequired: true },
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "academic programs" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
     component: () => import("./views/planning/program"),
+  },
+  {
+    path: "/planning/target-template",
+    name: "target-template",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "target template" && x.AccessList.Type.toLowerCase() === "planning")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/planning/target-template"),
   },
   {
     path: "/planning/outcome",
@@ -227,7 +251,7 @@ export default [
     meta: {
       authRequired: true,
       beforeResolve(routeTo, routeFrom, next) {
-        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "kpi list" && x.AccessList.Type.toLowerCase() === "delivery unit")) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "kpi list" && x.AccessList.Type.toLowerCase() === "planning")) {
           next();
         } else {
           next({ name: "404" });
@@ -490,12 +514,108 @@ export default [
     component: () => import("./views/inspection/iar"),
   },
   {
+    path: "/inspection/property",
+    name: "inspectionProperty",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "property" && x.AccessList.Type.toLowerCase() === "inspection")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/inspection/property"),
+  },
+  {
+    path: "/inspection/propertyinspection/:id",
+    name: "inspectionPropertyInspect",
+    meta: { authRequired: true },
+    component: () => import("./views/inspection/propertyinspection"),
+  },
+  {
+    path: "/property/iar",
+    name: "propertyIar",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "iar" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/iar"),
+  },
+  {
+    path: "/property/register",
+    name: "propertyRegister",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "pending" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/register"),
+  },
+  {
+    path: "/property/unassigned",
+    name: "propertyUnassigned",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "un-assigned" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/unassigned"),
+  },
+  {
+    path: "/property/dispose",
+    name: "propertyDispose",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "for disposal" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/dispose"),
+  },
+  {
+    path: "/property/posted",
+    name: "propertyPosted",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "properties" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/posted"),
+  },
+  {
     path: "/supply-and-assets/request-for-payment",
     name: "RFPPO",
     meta: {
       authRequired: true,
       beforeResolve(routeTo, routeFrom, next) {
-        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "request for payment" && x.AccessList.Type.toLowerCase() === "inspection")) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "request for payment" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
           next();
         } else {
           next({ name: "404" });
@@ -505,56 +625,19 @@ export default [
     component: () => import("./views/property/rfp-po"),
   },
   {
-    path: "/inspection/property",
-    name: "inspectionProperty",
-    component: () => import("./views/inspection/property"),
-  },
-  {
-    path: "/inspection/propertyinspection/:id",
-    name: "inspectionPropertyInspect",
-    component: () => import("./views/inspection/propertyinspection"),
-  },
-  {
-    path: "/property/iar",
-    name: "propertyIar",
-    meta: { authRequired: true },
-    component: () => import("./views/property/iar"),
-  },
-  {
-    path: "/property/register",
-    name: "propertyRegister",
-    meta: { authRequired: true },
-    component: () => import("./views/property/register"),
-  },
-  {
-    path: "/property/review",
-    name: "propertyReview",
-    meta: { authRequired: true },
-    component: () => import("./views/property/review"),
-  },
-  {
-    path: "/property/unassigned",
-    name: "propertyUnassigned",
-    meta: { authRequired: true },
-    component: () => import("./views/property/unassigned"),
-  },
-  {
-    path: "/property/dispose",
-    name: "propertyDispose",
-    meta: { authRequired: true },
-    component: () => import("./views/property/dispose"),
-  },
-  {
-    path: "/property/posted",
-    name: "propertyPosted",
-    meta: { authRequired: true },
-    component: () => import("./views/property/posted"),
-  },
-  {
-    path: "/property/location",
-    name: "propertyLocation",
-    meta: { authRequired: true },
-    component: () => import("./views/property/location"),
+    path: "/property/settings",
+    name: "propertySettings",
+    meta: {
+      authRequired: true,
+      beforeResolve(routeTo, routeFrom, next) {
+        if (userAccess.find((x) => x.AccessList.Access.toLowerCase() === "settings" && x.AccessList.Type.toLowerCase() === "supply & assets")) {
+          next();
+        } else {
+          next({ name: "404" });
+        }
+      },
+    },
+    component: () => import("./views/property/settings"),
   },
   {
     path: "/procurement/procurables",

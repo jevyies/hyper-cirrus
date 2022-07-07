@@ -9,6 +9,9 @@ export const actions = {
     GetDeliveryUnitByOffice(context, data){
         return api.get(`DeliveryUnit/office/${data}`);
     },
+    GetDeliveryUnitByCampus(context, data){
+        return api.get(`DeliveryUnit/Campus/${data}`);
+    },
     GetSingleDeliveryUnit(context, data){
         return api.get(`DeliveryUnit/${data}`);
     },

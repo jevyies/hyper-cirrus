@@ -9,6 +9,7 @@ import Multiselect from "vue-multiselect";
 import createNumberMask from "text-mask-addons/dist/createNumberMask";
 import MaskedInput from "vue-text-mask";
 import SupplierRfq from "@/components/modals/supplier-rfq";
+import PrintOptions from "@/components/modals/print-options.vue";
 
 export default {
     page: {
@@ -20,7 +21,8 @@ export default {
         MaskedInput,
         DatePicker,
         Multiselect,
-        SupplierRfq
+        SupplierRfq,
+        PrintOptions,
     },
     data() {
         return {
@@ -1459,7 +1461,27 @@ export default {
                 }
             });
         },
-        printRFQ() {},
+        printRFQ(id) {
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Rfq/Print",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        },
+        printNOA(id) {
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Rfq/Print/NOA",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        },
+        printAbstract(id) {
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Rfq/Print/Abstract",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        },
         openPO(item) {
             console.log(item)
             item.generatePO = true;
@@ -5040,7 +5062,7 @@ export default {
                                                             class="
                                                                 btn btn-purple
                                                             "
-                                                            @click="printRFQ(x)"
+                                                            @click="printRFQ(x.id)"
                                                         >
                                                             <i
                                                                 class="
@@ -5762,17 +5784,26 @@ export default {
                                                                             align-items-center
                                                                         "
                                                                     >
-                                                                        <p
+                                                                        <button
+                                                                            type="button"
                                                                             class="
-                                                                                mb-0
-                                                                                me-5
+                                                                                btn btn-purple
+                                                                                me-2
                                                                             "
                                                                             v-if="
                                                                                 y.isWinner
                                                                             "
+                                                                            @click="printNOA(x.id)"
                                                                         >
-                                                                            Winner
-                                                                        </p>
+                                                                            <i
+                                                                                class="
+                                                                                    bx
+                                                                                    bxs-printer
+                                                                                    me-1
+                                                                                "
+                                                                            ></i
+                                                                            >Print NOA
+                                                                        </button>
                                                                         <a
                                                                             href="javascript: void(0);"
                                                                             class="
@@ -6060,7 +6091,7 @@ export default {
                                                                 btn btn-purple
                                                                 me-1
                                                             "
-                                                            @click="printRFQ(x)"
+                                                            @click="printAbstract(x.id)"
                                                         >
                                                             <i
                                                                 class="
@@ -6069,7 +6100,7 @@ export default {
                                                                     me-1
                                                                 "
                                                             ></i
-                                                            >Print RFQ
+                                                            >Print Abstract
                                                         </button>
                                                         <button
                                                             type="button"
@@ -6324,5 +6355,6 @@ export default {
             </div>
         </div>
         <supplier-rfq ref="supplier" @dropData="dropSuppliers($event)"></supplier-rfq>
+        <print-options ref="printOpt"></print-options>
     </Layout>
 </template>

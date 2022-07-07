@@ -43,11 +43,15 @@ export default {
       approved: [],
       accounts: [],
       available: [],
+      availablePayment: [],
+      availablePO: [],
       selectedAccounts: [],
       disbursement: {
         id: 0,
         bursId: null,
         computations: null,
+        particulars: null,
+        amount: "0",
         jevNumber: null,
         modeOfPayment: null,
         checkNumber: null,
@@ -77,6 +81,17 @@ export default {
         prefix: "",
         allowDecimal: true,
       }),
+      total: "0",
+      temp: "0",
+      tempAmount: "0",
+      totalTemp: "0",
+      balance: 0,
+      bursBalance: 0,
+      postDateModal: false,
+      postData: {
+        postDate: Date.now(),
+        data: 0,
+      },
     };
   },
   methods: {
@@ -86,11 +101,52 @@ export default {
       this.fetchPosted();
       // this.fetchApproved();
       this.fetchPending();
-      this.fetchBurs();
+      // this.fetchBurs();
       this.fetchAvailable();
     },
     formatDate(data) {
-      return new Date(data).toLocaleDateString("en-US");
+      return new Date(data).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    },
+    checkTotal(event) {
+      if (Number(this.getExactAmt(event.target.value)) > this.selectedBurs.balance) {
+        this.disbursement.amount = "0";
+        this.showToast(
+          "Total amount exceeds on allowable amount to be disbursed",
+          "error"
+        );
+        event.preventDefault();
+        return false;
+      }
+      this.balance = Number(this.getExactAmt(event.target.value));
+    },
+    loopDisbursementAccounts() {
+      let val = 0;
+      for (let x = 0; x < this.disbursement.disbursementItems.length; x++) {
+        val += Number(this.getExactAmt(this.disbursement.disbursementItems[x].amount));
+      }
+      return val;
+    },
+    calculateTotal(event, item, index) {
+      this.total = 0;
+      const before = this.loopDisbursementAccounts();
+      if (before > Number(this.getExactAmt(this.disbursement.amount))) {
+        this.disbursement.disbursementItems[index].amount = "0";
+        let after = this.loopDisbursementAccounts();
+        this.total = after.toString();
+        this.balance = Number(this.getExactAmt(this.disbursement.amount)) - after;
+        this.showToast(
+          "Total amount exceeds on allowable amount to be disbursed",
+          "error"
+        );
+        event.preventDefault();
+        return false;
+      }
+      this.total = before.toString();
+      this.balance = Number(this.getExactAmt(this.disbursement.amount)) - before;
     },
     /** create burs */
     createDisbursement(record) {
@@ -99,11 +155,21 @@ export default {
       this.disbursement.id = 0;
       this.disbursement.bursId = null;
       this.disbursement.disbursementItems = [];
+      this.disbursement.particulars = record.record.particulars;
       this.selectBurs(record);
     },
     selectBurs(record) {
-      this.selectedBurs = this.burs.find((rfp) => rfp.id == record.id);
-      this.disbursement.bursId = record.id;
+      if (record.type === "payment") {
+        this.selectedBurs = this.availablePayment.find(
+          (rfp) => rfp.id == record.record.id
+        );
+        this.disbursement.bursId = record.record.id;
+      }
+
+      if (record.type === "po") {
+        this.selectedBurs = this.availablePO.find((rfp) => rfp.id == record.record.id);
+        this.disbursement.bursId = record.record.id;
+      }
     },
     formatCurrency(data) {
       return new Intl.NumberFormat("en-US", {
@@ -120,6 +186,7 @@ export default {
       this.disbursement.checkDate = Date.now();
       this.disbursement.disbursementItems = [];
       this.disbursement.bank = null;
+      this.disbursement.amount = "0";
       this.submitted = false;
       this.$v.$reset();
     },
@@ -163,6 +230,13 @@ export default {
     },
 
     saveDisbursement() {
+      if (Number(this.getExactAmt(this.disbursement.amount)) > this.balance) {
+        this.showToast(
+          "Total amount exceeds on allowable amount to be disbursed",
+          "error"
+        );
+        return;
+      }
       if (!this.disbursement.bursId) {
         this.$swal({
           title: "Error",
@@ -188,6 +262,7 @@ export default {
         accountId: item.accountId,
         amount: Number(this.getExactAmt(item.amount)),
       }));
+      disbursement.amount = Number(this.getExactAmt(this.disbursement.amount));
       if (this.disbursement.id > 0) {
         /** Update */
         this.$store
@@ -261,6 +336,7 @@ export default {
       }
       // }
     },
+
     postDisbursement(record) {
       this.$swal({
         title: "Are you sure?",
@@ -272,27 +348,67 @@ export default {
         confirmButtonText: "Yes, post it!",
       }).then((result) => {
         if (result.isConfirmed) {
-          this.$store
-            .dispatch("disbursement/postDisbursement", record.id)
-            .then(() => {
-              this.pendings.splice(this.pendings.indexOf(record), 1);
-              this.fetchPosted();
-              this.$swal({
-                title: "Posted!",
-                text: "Disbursement has been posted.",
-                icon: "success",
-              });
-            })
-            .catch(() => {
-              this.$swal({
-                title: "Error!",
-                text:
-                  "Something went wrong. Cannot post Disbursement. Please contact your administrator",
-                icon: "error",
-              });
-            });
+          this.postData.data = record;
+          this.postDateModal = true;
+          // this.$store
+          //   .dispatch("disbursement/postDisbursement", record.id)
+          //   .then(() => {
+          //     this.pendings.splice(this.pendings.indexOf(record), 1);
+          //     this.fetchPosted();
+          //     this.$swal({
+          //       title: "Posted!",
+          //       text: "Disbursement has been posted.",
+          //       icon: "success",
+          //     });
+          //   })
+          //   .catch(() => {
+          //     this.$swal({
+          //       title: "Error!",
+          //       text:
+          //         "Something went wrong. Cannot post Disbursement. Please contact your administrator",
+          //       icon: "error",
+          //     });
+          //   });
         }
       });
+    },
+    confirmPost() {
+      if (!this.postData.postDate) {
+        this.showToast("Please select post date", "error");
+        return;
+      }
+      const nDate = new Date(
+        new Date(this.postData.postDate).getTime() -
+          new Date(this.postData.postDate).getTimezoneOffset() * 60 * 1000
+      );
+      this.$store
+        .dispatch("disbursement/postDisbursement", {
+          id: this.postData.data.id,
+          dateApproved: nDate.toISOString(),
+        })
+        .then(() => {
+          this.pendings.splice(this.pendings.indexOf(this.postData.data), 1);
+          this.fetchPosted();
+          this.postData = {
+            data: null,
+            postDate: Date.now(),
+          };
+          this.postDateModal = false;
+          this.$swal({
+            title: "Posted!",
+            text: "Disbursement has been posted.",
+            icon: "success",
+          });
+        })
+        .catch(() => {
+          this.postDateModal = false;
+          this.$swal({
+            title: "Error!",
+            text:
+              "Something went wrong. Cannot post Disbursement. Please contact your administrator",
+            icon: "error",
+          });
+        });
     },
     approveDisbursement(record) {
       this.$swal({
@@ -368,6 +484,8 @@ export default {
             ...item,
             viewUpload: false,
             attachments: [],
+            rotateChevy: false,
+            showDetails: false,
           }));
         })
         .catch(() => {
@@ -381,7 +499,13 @@ export default {
       this.$store
         .dispatch("disbursement/getApprovedDisbursements", this.cycle)
         .then((response) => {
-          this.approved = response.data;
+          this.approved = response.data.map((item) => ({
+            ...item,
+            viewUpload: false,
+            attachments: [],
+            rotateChevy: false,
+            showDetails: false,
+          }));
         })
         .catch(() => {
           this.$swal({
@@ -400,6 +524,8 @@ export default {
             ...item,
             viewUpload: false,
             attachments: [],
+            rotateChevy: false,
+            showDetails: false,
           }));
         })
         .catch(() => {
@@ -433,7 +559,7 @@ export default {
     },
     fetchAccounts() {
       this.$store
-        .dispatch("accounts/getAllAccounts")
+        .dispatch("accounts/getAccountsForDisbursement")
         .then((response) => {
           this.accounts = response.data.map((item) => ({
             value: item.id,
@@ -452,7 +578,17 @@ export default {
       this.$store
         .dispatch("disbursement/getAvailableBurs", this.cycle)
         .then((response) => {
-          this.available = response.data;
+          this.available = response.data.map((item) => ({
+            ...item,
+            rotateChevy: false,
+            showDetails: false,
+          }));
+          this.availablePayment = this.available.filter(
+            (item) => item.rfp.type.toLowerCase() === "payment"
+          );
+          this.availablePO = this.available.filter(
+            (item) => item.rfp.type.toLowerCase() === "po"
+          );
         })
         .catch(() => {
           this.$swal({
@@ -480,10 +616,28 @@ export default {
       this.selectedAccounts = [];
     },
     deleteItem(item) {
-      this.disbursement.disbursementItems.splice(
-        this.disbursement.disbursementItems.indexOf(item),
-        1
-      );
+      this.$swal({
+        title: "Are you sure?",
+        text: "You are going to remove this item. Are you sure?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#f1b44c",
+        confirmButtonText: "Remove it!",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.disbursement.disbursementItems.splice(
+            this.disbursement.disbursementItems.indexOf(item),
+            1
+          );
+          const newValue = this.loopDisbursementAccounts();
+          this.total = newValue.toString();
+          this.balance = Number(this.getExactAmt(this.disbursement.amount)) - newValue;
+        }
+      });
+      // this.disbursement.disbursementItems.splice(
+      //   this.disbursement.disbursementItems.indexOf(item),
+      //   1
+      // );
     },
     customLabel({ uacs, accountName }) {
       return `${uacs} - ${accountName}`;
@@ -495,12 +649,42 @@ export default {
       });
       this.$bvModal.show("print-options-modal");
     },
+    pushAttachments(record) {
+      if (record.type === "pending") {
+        /** push record.attachments to this.pendings */
+        this.pendings.find((item) => item.id === record.id).attachments = [];
+        this.pendings
+          .find((item) => item.id === record.id)
+          .attachments.push(...record.attachments);
+      }
+      if (record.type === "posted") {
+        /** push record.attachments to this.posted */
+        this.posted.find((item) => item.id === record.id).attachments = [];
+        this.posted
+          .find((item) => item.id === record.id)
+          .attachments.push(...record.attachments);
+      }
+    },
+    handleUpload(record) {
+      if (record.type === "pending") {
+        /** push record.attachments to this.pendings */
+        this.pendings
+          .find((item) => item.id === record.id)
+          .attachments.push(record.response);
+      }
+      if (record.type === "posted") {
+        /** push record.attachments to this.posted */
+        this.posted
+          .find((item) => item.id === record.id)
+          .attachments.push(record.response);
+      }
+    },
   },
   created() {
     this.fetchPosted();
     // this.fetchApproved();
     this.fetchPending();
-    this.fetchBurs();
+    // this.fetchBurs();
     this.fetchAccounts();
     this.fetchAvailable();
   },
@@ -510,14 +694,6 @@ export default {
 <template>
   <Layout @changeCycle="changeCycle">
     <PageHeader :title="title" :items="items" />
-    <!-- <div class="row">
-      <div class="col-lg-12 text-end mb-2">
-        <b-button variant="info" @click="createDisbursement">
-          <i class="bx bx-list-plus font-size-16 align-middle me-1"></i> Create
-          Disbursement
-        </b-button>
-      </div>
-    </div> -->
     <b-tabs content-class="pt-3 pb-3 text-muted" class="mt-4">
       <b-tab>
         <template v-slot:title>
@@ -526,7 +702,34 @@ export default {
           </span>
           <span class="d-none d-sm-inline-block">Available</span>
         </template>
-        <AvailableBURS :records="available" @create="createDisbursement" />
+        <b-tabs pills vertical content-class="text-muted ms-4" class="mt-3">
+          <b-tab>
+            <template v-slot:title>
+              <span class="d-inline-block d-sm-none">
+                <i class="bx bx-home"></i>
+              </span>
+              <span class="d-none d-sm-inline-block">Payment</span>
+            </template>
+            <AvailableBURS
+              :records="availablePayment"
+              type="payment"
+              @create="createDisbursement"
+            />
+          </b-tab>
+          <b-tab>
+            <template v-slot:title>
+              <span class="d-inline-block d-sm-none">
+                <i class="bx bx-home"></i>
+              </span>
+              <span class="d-none d-sm-inline-block">Purchase Orders</span>
+            </template>
+            <AvailableBURS
+              :records="availablePO"
+              type="po"
+              @create="createDisbursement"
+            />
+          </b-tab>
+        </b-tabs>
       </b-tab>
       <b-tab>
         <template v-slot:title>
@@ -542,6 +745,8 @@ export default {
           @remove="removeDisbursement"
           @post="postDisbursement"
           @printDisbursement="printDisbursement"
+          @pushAttachments="pushAttachments"
+          @handleUpload="handleUpload"
         />
       </b-tab>
       <b-tab>
@@ -557,6 +762,8 @@ export default {
           @return="returnDisbursement"
           @printDisbursement="printDisbursement"
           type="posted"
+          @pushAttachments="pushAttachments"
+          @handleUpload="handleUpload"
         />
       </b-tab>
       <!-- <b-tab>
@@ -579,8 +786,8 @@ export default {
       v-model="disbursementModal.show"
       :title="disbursementModal.title"
       size="lg"
-      scrollable
       hide-footer
+      scrollable
     >
       <!-- <div class="mb-3" v-if="disbursement.id === 0">
         <label>Select Approved BURS</label>
@@ -618,9 +825,7 @@ export default {
               <div class="col-lg-6">
                 <p class="mb-1">
                   <span>Supplier/Payee: </span
-                  ><span class="text-warning"
-                    >{{ selectedBurs.rfp.rfpPaymentItem.rfp.supplier.name }}
-                  </span>
+                  ><span class="text-warning">{{ selectedBurs.rfp.payee }} </span>
                 </p>
               </div>
               <div class="col-lg-6">
@@ -641,6 +846,14 @@ export default {
               </div>
               <div class="col-lg-6">
                 <p class="mb-1">
+                  <span>Balance: </span
+                  ><span class="text-warning">{{
+                    formatCurrency(selectedBurs.balance)
+                  }}</span>
+                </p>
+              </div>
+              <div class="col-lg-6">
+                <p class="mb-1">
                   <span>Date Approved: </span
                   ><span class="text-warning">{{
                     formatDate(selectedBurs.dateApproved)
@@ -653,85 +866,137 @@ export default {
                   ><span class="text-warning">{{ selectedBurs.particulars }}</span>
                 </p>
               </div>
+              <div class="col-lg-6">
+                <p>
+                  <span>Disbursement created: </span
+                  ><span class="text-warning">{{
+                    selectedBurs.disbursements.length
+                  }}</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <div v-if="disbursement.bursId">
-        <div class="row">
-          <div class="col-lg-10 mb-3">
-            <multiselect
-              v-model="selectedAccounts"
-              track-by="value"
-              label="accountName"
-              placeholder="Select accounts"
-              :custom-label="customLabel"
-              :options="accounts"
-              :searchable="true"
-              :multiple="true"
-              :close-on-select="false"
-            >
-              <template slot="singleLabel" slot-scope="{ option }"
-                ><strong>{{ option.text }}</strong> for
-                <strong> {{ option.supplier }}</strong></template
-              >
-            </multiselect>
-          </div>
-          <div class="col-lg-2">
-            <b-button
-              variant="primary"
-              size="sm"
-              class="btn-block"
-              @click="addSelectedAccounts"
-              >Add</b-button
-            >
+        <div class="row my-3">
+          <div class="col-lg-12 mb-3">
+            <label>Amount</label>
+            <masked-input
+              autocomplete="off"
+              type="text"
+              v-model="disbursement.amount"
+              placeholder="Enter Amount..."
+              class="form-control"
+              :mask="currencyMask"
+              @blur="checkTotal($event)"
+            ></masked-input>
           </div>
         </div>
-
-        <div class="row">
-          <div class="col-lg-12 mb-3">
-            <div class="table-responsive">
-              <table
-                class="table table-sm align-middle table-bordered border-primary mb-0"
-              >
-                <thead>
-                  <tr>
-                    <th>UACS</th>
-                    <th>Account Name</th>
-                    <th class="text-center">Amount</th>
-                    <th class="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="(item, index) in disbursement.disbursementItems"
-                    :key="index"
+        <div class="card border border-info">
+          <div class="card-body py-2">
+            <div class="card-text">
+              <div class="row mt-3">
+                <div class="col-lg-10 mb-3">
+                  <multiselect
+                    v-model="selectedAccounts"
+                    track-by="value"
+                    label="accountName"
+                    placeholder="Select accounts"
+                    :custom-label="customLabel"
+                    :options="accounts"
+                    :searchable="true"
+                    :multiple="true"
+                    :close-on-select="false"
                   >
-                    <th scope="row">{{ item.account.uacs }}</th>
-                    <td>{{ item.account.accountName }}</td>
-                    <td>
-                      <!-- <b-form-input
-                        v-model="item.amount"
-                        placeholder="Enter amount..."
-                        class="form-control-sm"
-                      ></b-form-input> -->
-                      <masked-input
-                        autocomplete="off"
-                        type="text"
-                        v-model="item.amount"
-                        placeholder="Enter Amount..."
-                        class="form-control"
-                        :mask="currencyMask"
-                      ></masked-input>
-                    </td>
-                    <td class="text-center">
-                      <a href="javascript:void(0)" @click="deleteItem(item)"
-                        ><i class="bx bx-trash text-danger"></i
-                      ></a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    <template slot="singleLabel" slot-scope="{ option }"
+                      ><strong>{{ option.text }}</strong> for
+                      <strong> {{ option.supplier }}</strong></template
+                    >
+                  </multiselect>
+                </div>
+                <div class="col-lg-2 pt-1">
+                  <b-button
+                    variant="primary"
+                    size="sm"
+                    class="btn-block"
+                    @click="addSelectedAccounts"
+                    >Add</b-button
+                  >
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-12 mb-3">
+                  <div class="table-responsive">
+                    <table
+                      class="table table-sm align-middle table-bordered border-primary mb-0"
+                    >
+                      <thead>
+                        <tr>
+                          <th>UACS</th>
+                          <th>Account Name</th>
+                          <th class="text-center">Amount</th>
+                          <th class="text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="(item, index) in disbursement.disbursementItems"
+                          :key="index"
+                        >
+                          <th class="col-md-2" scope="row">{{ item.account.uacs }}</th>
+                          <td class="col-md-6">{{ item.account.accountName }}</td>
+                          <td class="col-md-3">
+                            <masked-input
+                              autocomplete="off"
+                              type="text"
+                              v-model="item.amount"
+                              placeholder="Enter Amount..."
+                              class="form-control"
+                              :mask="currencyMask"
+                              @blur="calculateTotal($event, item, index)"
+                            ></masked-input>
+                          </td>
+                          <td class="text-center col-md-1">
+                            <a href="javascript:void(0)" @click="deleteItem(item)"
+                              ><i class="bx bx-trash text-danger"></i
+                            ></a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <table
+                    class="table table-sm align-middle table-bordered border-primary mt-2 mb-0"
+                  >
+                    <tr>
+                      <td class="col-md-8" colspan="2">
+                        <p class="mb-1">
+                          <span><strong>Total</strong></span>
+                        </p>
+                      </td>
+                      <td class="col-md-4 text-center" colspan="2">
+                        <span class="text-warning mt-2">
+                          {{ formatCurrency(total) }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-md-8" colspan="2">
+                        <p class="mb-1">
+                          <span><strong>Net</strong></span>
+                        </p>
+                      </td>
+                      <td class="col-md-4 text-center" colspan="2">
+                        <span class="text-warning mt-2">
+                          {{ formatCurrency(balance) }}
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -747,10 +1012,6 @@ export default {
         </div>
         <div class="col-lg-6 mb-3">
           <label>Mode of Payment</label>
-          <!-- <b-form-input
-            v-model="disbursement.modeOfPayment"
-            placeholder="Enter mode of payment..."
-          ></b-form-input> -->
           <b-form-select
             v-model="disbursement.modeOfPayment"
             :options="modeOfPayment"
@@ -763,6 +1024,15 @@ export default {
             v-model="disbursement.computations"
             placeholder="Enter computations..."
             rows="3"
+            max-rows="6"
+          ></b-form-textarea>
+        </div>
+        <div class="col-lg-12 mb-3">
+          <label>Particulars</label>
+          <b-form-textarea
+            v-model="disbursement.particulars"
+            placeholder="Enter particulars..."
+            rows="2"
             max-rows="6"
           ></b-form-textarea>
         </div>
@@ -806,6 +1076,23 @@ export default {
             >Close</b-button
           >
         </div>
+      </div>
+    </b-modal>
+    <b-modal v-model="postDateModal" title="Confirm Disbursement Post" hide-footer>
+      <div class="mb-3">
+        <label for="date">Approve Date</label>
+        <date-picker
+          v-model="postData.postDate"
+          :first-day-of-week="1"
+          lang="en"
+          type="datetime"
+          value-type="timestamp"
+          format="YYYY-MM-DD hh:mm a"
+        ></date-picker>
+      </div>
+      <div class="modal-footer">
+        <b-button variant="primary" @click="confirmPost">Post</b-button>
+        <b-button variant="link" @click="postDateModal = !postDateModal">Close</b-button>
       </div>
     </b-modal>
     <print-options ref="printOpt"></print-options>

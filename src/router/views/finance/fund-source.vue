@@ -565,11 +565,39 @@ export default {
     toggleTableViews(str) {
       this.toggleTables = str;
     },
-    print(id) {
+    printAllotment(id) {
       this.$refs.printOpt.putOptions({
         apiUrl:
           "/Finance/ObjectOfExpenditures/Print/ObjectOfExpenditure/Allotment/FundSource",
         routeVariables: [id, this.cycle],
+      });
+      this.$bvModal.show("print-options-modal");
+    },
+    printUtilization(id) {
+      this.$refs.printOpt.putOptions({
+        apiUrl: "/api/FundSource/Print/Utilization/Report",
+        routeVariables: [id],
+      });
+      this.$bvModal.show("print-options-modal");
+    },
+    printObligations(id) {
+      this.$refs.printOpt.putOptions({
+        apiUrl: "/api/FundSource/Print/Obligations/Report",
+        routeVariables: [this.cycle, id],
+      });
+      this.$bvModal.show("print-options-modal");
+    },
+    printDisbursement(id) {
+      this.$refs.printOpt.putOptions({
+        apiUrl: "/api/FundSource/Print/Disbursement/Report",
+        routeVariables: [this.cycle, id],
+      });
+      this.$bvModal.show("print-options-modal");
+    },
+    printAllocation(id) {
+      this.$refs.printOpt.putOptions({
+        apiUrl: "/api/FundSource/Print/Object/Allocation/Report",
+        routeVariables: [this.cycle, id],
       });
       this.$bvModal.show("print-options-modal");
     },
@@ -966,7 +994,11 @@ export default {
                   @update-item="updateItem"
                   @delete-item="deleteItem"
                   @view-oe="viewOE"
-                  @print="print"
+                  @printAllotment="printAllotment"
+                  @printUtilization="printUtilization"
+                  @printObligations="printObligations"
+                  @printDisbursement="printDisbursement"
+                  @printAllocation="printAllocation"
                 />
               </b-tab>
               <b-tab>

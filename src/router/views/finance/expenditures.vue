@@ -5,6 +5,7 @@ import PrexcTransactions from "@/components/tables/prexctransactions";
 import { uniqueId, map } from "lodash";
 import Treeselect from "@riophae/vue-treeselect";
 import Prexcs from "@/components/tables/prexcs";
+import PrintOptions from "@/components/modals/print-options.vue";
 // import the styles
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 
@@ -18,6 +19,7 @@ export default {
     Treeselect,
     PrexcTransactions,
     Prexcs,
+    PrintOptions,
   },
   data() {
     return {
@@ -459,6 +461,13 @@ export default {
         this.fetchPrexc({ fundSourceId: this.selectedFS.id, outcomeId: record.id });
       }
     },
+    async print(id) {
+      this.$refs.printOpt.putOptions({
+        apiUrl: "/Finance/ObjectOfExpenditures/Print/RAOS",
+        routeVariables: [id],
+      });
+      this.$bvModal.show("print-options-modal");
+    },
   },
   async created() {
     this.cycle = this.$store.state.data.cycle;
@@ -642,6 +651,7 @@ export default {
                         @viewTransactions="viewTransactions"
                         @deleteItem="deleteItem"
                         @addNew="addNew"
+                        @print="print"
                       />
                     </div>
                   </b-collapse>
@@ -717,6 +727,7 @@ export default {
         v-if="objectExpenditure"
       />
     </b-modal>
+    <print-options ref="printOpt"></print-options>
   </Layout>
 </template>
 

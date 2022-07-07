@@ -7,6 +7,7 @@ export const state = {
   agency: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).department.deliveryUnit.office.campus.agency : {},
   rootFileDirectory: 'https://www.cocyfms.codes/files/',
   uploadURL: 'https://www.cocyfms.codes/api/FileManager/File/Upload',
+  decipherCode: '$b14cA5898a4e4142@@@2ea2143a2410'
 };
 export const mutations = {
   changeCycle(state, data) {

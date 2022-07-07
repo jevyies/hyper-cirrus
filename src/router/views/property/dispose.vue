@@ -145,9 +145,12 @@ export default {
           item.addDocu = false;
           item.attachmentLoading = false;
           item.fileSearch = "";
+          item.propertyInspections.forEach((inspect) => {
+            inspect.inspectionFiles = [];
+            inspect.attachmentLoading = false;
+          });
         });
         this.tableData = res.data;
-        console.log(this.tableData);
       })
       .catch(() => {
         this.tableBusy = false;
@@ -266,6 +269,31 @@ export default {
       }
       return false;
     },
+    getInspectionAttachments(row) {
+      row.inspectionVisible = !row.inspectionVisible;
+      if (row.inspectionVisible) {
+        row.propertyInspections.forEach((inspect) => {
+          inspect.inspectionFiles = [];
+          inspect.attachmentLoading = true;
+          this.$store
+            .dispatch("filemanager/GetFiles", {
+              id: inspect.id,
+              type: "Property Inspection",
+            })
+            .then((res) => {
+              inspect.attachmentLoading = false;
+              inspect.inspectionFiles = res.data;
+            })
+            .catch(() => {
+              inspect.attachmentLoading = false;
+              this.showToast(
+                "Something went wrong! - getting documents",
+                "error"
+              );
+            });
+        });
+      }
+    },
     uploadDocument(response, id) {
       var index = this.tableData.findIndex((x) => x.id == id);
       this.tableData[index].propertyFiles.push(response);
@@ -351,7 +379,12 @@ export default {
     <PageHeader :title="title" :items="items" />
     <div class="row">
       <div class="col-12">
-        <div class="card border">
+        <div
+          class="
+            card
+            border-4 border-top border-start-0 border-end-0 border-primary
+          "
+        >
           <div class="card-body">
             <div class="row">
               <div class="col-md-6">
@@ -835,7 +868,9 @@ export default {
                                           <b>Yearly Depreciation:</b>
                                         </b-col>
                                         <b-col>{{
-                                          propertyRow.item.yearlyDepreciation
+                                          setAmount(
+                                            propertyRow.item.yearlyDepreciation
+                                          )
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
@@ -843,7 +878,9 @@ export default {
                                           <b>Salvage Value:</b>
                                         </b-col>
                                         <b-col>{{
-                                          propertyRow.item.salvageValue
+                                          setAmount(
+                                            propertyRow.item.salvageValue
+                                          )
                                         }}</b-col>
                                       </b-row>
                                       <b-row class="mb-2">
@@ -972,7 +1009,7 @@ export default {
                                     </p>
                                   </div>
                                 </b-card-body>
-                                <b-card-body class="text-muted border">
+                                <b-card-body v-else class="text-muted border">
                                   <ul
                                     class="
                                       verti-timeline
@@ -1126,6 +1163,7 @@ export default {
                                 </b-card-body>
                               </b-collapse>
                               <!-- Inspection History -->
+                              <!-- Inspection History -->
                               <b-card-body class="border">
                                 <div
                                   class="
@@ -1135,8 +1173,7 @@ export default {
                                     cursor-pointer
                                   "
                                   @click="
-                                    propertyRow.item.inspectionVisible =
-                                      !propertyRow.item.inspectionVisible
+                                    getInspectionAttachments(propertyRow.item)
                                   "
                                 >
                                   <h6 class="mb-0">
@@ -1178,7 +1215,7 @@ export default {
                                     </p>
                                   </div>
                                 </b-card-body>
-                                <b-card-body class="text-muted border">
+                                <b-card-body v-else class="text-muted border">
                                   <ul
                                     class="
                                       verti-timeline
@@ -1247,69 +1284,194 @@ export default {
                                           </div>
                                         </div>
                                         <div class="media-body">
-                                          <div class="font-size-12 mb-1">
-                                            Property Status:
-                                            <b class="font-size-14">{{
-                                              y.propertyStatus
-                                            }}</b>
-                                          </div>
-                                          <div class="font-size-12 mb-1">
-                                            Assessed Value:
-                                            <b class="font-size-14">{{
-                                              y.assessedValue
-                                            }}</b>
-                                          </div>
-                                          <div class="font-size-12 mb-1">
-                                            Inspection Status:
-                                            <b class="font-size-14">{{
-                                              y.inspectionStatus
-                                            }}</b>
-                                          </div>
-                                          <div class="font-size-12 mb-1">
-                                            Inspected By:
-                                            <b
-                                              v-if="y.employee"
-                                              class="font-size-14"
-                                            >
-                                              {{
-                                                y.employee.firstName
-                                                  .charAt(0)
-                                                  .toUpperCase() +
-                                                y.employee.firstName.slice(1)
-                                              }}
-                                              {{
-                                                y.employee.middleName
-                                                  ? `${y.employee.middleName
-                                                      .charAt(0)
-                                                      .toUpperCase()}.`
-                                                  : ""
-                                              }}
-                                              {{
-                                                y.employee.lastName
-                                                  .charAt(0)
-                                                  .toUpperCase() +
-                                                y.employee.lastName.slice(1)
-                                              }}</b
-                                            >
-                                            <b v-else class="font-size-14"
-                                              >n/a</b
-                                            >
-                                          </div>
-                                          <div class="font-size-16 mb-1">
-                                            <span
-                                              v-if="y.status == 'PENDING'"
+                                          <div class="row">
+                                            <div
                                               class="
-                                                badge
-                                                bg-warning bg-soft
-                                                text-warning
+                                                col-md-4
+                                                border-end border-3
                                               "
-                                              ><b>{{ y.status }}</b></span
                                             >
-                                            <span
-                                              v-if="y.status == 'POSTED'"
-                                              class="badge bg-success"
-                                              ><b>{{ y.status }}</b></span
-                                            >
+                                              <div class="font-size-12 mb-1">
+                                                Property Status:
+                                                <b class="font-size-14">{{
+                                                  y.propertyStatus
+                                                }}</b>
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Assessed Value:
+                                                <b class="font-size-14">{{
+                                                  y.assessedValue
+                                                }}</b>
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Inspection Status:
+                                                <b class="font-size-14">{{
+                                                  y.inspectionStatus
+                                                }}</b>
+                                              </div>
+                                              <div class="font-size-12 mb-1">
+                                                Inspected By:
+                                                <b
+                                                  v-if="y.employee"
+                                                  class="font-size-14"
+                                                >
+                                                  {{
+                                                    y.employee.firstName
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                    y.employee.firstName.slice(
+                                                      1
+                                                    )
+                                                  }}
+                                                  {{
+                                                    y.employee.middleName
+                                                      ? `${y.employee.middleName
+                                                          .charAt(0)
+                                                          .toUpperCase()}.`
+                                                      : ""
+                                                  }}
+                                                  {{
+                                                    y.employee.lastName
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                    y.employee.lastName.slice(1)
+                                                  }}</b
+                                                >
+                                                <b v-else class="font-size-14"
+                                                  >n/a</b
+                                                >
+                                              </div>
+                                              <div class="font-size-16 mb-1">
+                                                <span
+                                                  v-if="y.status == 'PENDING'"
+                                                  class="
+                                                    badge
+                                                    bg-warning bg-soft
+                                                    text-warning
+                                                  "
+                                                  ><b>{{ y.status }}</b></span
+                                                >
+                                                <span
+                                                  v-if="y.status == 'POSTED'"
+                                                  class="badge bg-success"
+                                                  ><b>{{ y.status }}</b></span
+                                                >
+                                              </div>
+                                            </div>
+                                            <div class="col-md-8">
+                                              <div class="font-size-13 mb-2">
+                                                Attachments:
+                                              </div>
+                                              <b-row
+                                                style="
+                                                  max-height: 150px;
+                                                  overflow: auto;
+                                                "
+                                              >
+                                                <b-col
+                                                  sm="4"
+                                                  v-for="(
+                                                    z, index
+                                                  ) in y.inspectionFiles"
+                                                  :key="z.id"
+                                                  class="mb-2"
+                                                >
+                                                  <div
+                                                    class="
+                                                      position-relative
+                                                      cursor-pointer
+                                                    "
+                                                    :style="`z-index: ${
+                                                      y.inspectionFiles.length -
+                                                      index
+                                                    }`"
+                                                  >
+                                                    <div
+                                                      class="border p-3"
+                                                      @click="openDocument(z)"
+                                                    >
+                                                      <div>
+                                                        <div
+                                                          class="
+                                                            avatar-xs
+                                                            me-3
+                                                            mb-2
+                                                          "
+                                                        >
+                                                          <div
+                                                            class="
+                                                              avatar-title
+                                                              bg-transparent
+                                                              rounded
+                                                            "
+                                                          >
+                                                            <i
+                                                              v-if="
+                                                                z.fileType.includes(
+                                                                  'image'
+                                                                )
+                                                              "
+                                                              class="
+                                                                mdi mdi-image
+                                                                font-size-24
+                                                                text-purple
+                                                              "
+                                                            ></i>
+                                                            <i
+                                                              v-if="
+                                                                z.fileType.includes(
+                                                                  'application'
+                                                                )
+                                                              "
+                                                              class="
+                                                                mdi
+                                                                mdi-file-pdf-outline
+                                                                font-size-24
+                                                                text-danger
+                                                              "
+                                                            ></i>
+                                                          </div>
+                                                        </div>
+                                                        <div class="d-flex">
+                                                          <div
+                                                            class="
+                                                              overflow-hidden
+                                                              me-auto
+                                                            "
+                                                          >
+                                                            <h5
+                                                              class="
+                                                                font-size-14
+                                                                text-truncate
+                                                                mb-1
+                                                              "
+                                                            >
+                                                              {{
+                                                                z.description
+                                                              }}
+                                                            </h5>
+                                                            <p
+                                                              class="
+                                                                text-muted
+                                                                mb-0
+                                                              "
+                                                            >
+                                                              {{
+                                                                formatDateWithTime(
+                                                                  new Date(
+                                                                    z.dateTimeUploaded
+                                                                  )
+                                                                )
+                                                              }}
+                                                            </p>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </b-col>
+                                              </b-row>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>

@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { cloneDeep } from "lodash";
 import { required } from "vuelidate/lib/validators";
 import DatePicker from "vue2-datepicker";
+import PrintOptions from "@/components/modals/print-options.vue";
 
 export default {
     page: {
@@ -14,6 +15,7 @@ export default {
         Layout,
         PageHeader,
         DatePicker,
+        PrintOptions,
     },
     data() {
         return {
@@ -269,7 +271,20 @@ export default {
                 }
             });
         },
-        printPO(id) {},
+        async printPO(id) {
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Po/Print",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        },
+        async printNTP(id){
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Po/Print/NTP",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        },
         savePODate(row) {
             this.submitted = true;
             row.dateError = false;
@@ -936,6 +951,28 @@ export default {
                                             >Print Final P.O</span
                                         >
                                     </a>
+                                    <a
+                                        href="javascript:void(0);"
+                                        class="
+                                            action-icon
+                                            text-purple
+                                            hover-max-width
+                                            d-flex
+                                            align-items-center
+                                        "
+                                        @click="printNTP(x.id)"
+                                        v-if="!x.visible"
+                                        ><i
+                                            class="
+                                                mdi mdi-printer
+                                                font-size-22
+                                                me-1
+                                            "
+                                        ></i>
+                                        <span class="me-2"
+                                            >Print NTP</span
+                                        >
+                                    </a>
                                 </div>
                             </div>
                         </b-card-header>
@@ -1145,13 +1182,23 @@ export default {
                                         <div class="mt-2">
                                             <button
                                                 type="button"
-                                                class="btn btn-purple"
+                                                class="btn btn-purple me-2"
                                                 @click="printPO(x.id)"
                                             >
                                                 <i
                                                     class="bx bx-printer me-1"
                                                 ></i
                                                 >Print Final P.O
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-purple"
+                                                @click="printNTP(x.id)"
+                                            >
+                                                <i
+                                                    class="bx bx-printer me-1"
+                                                ></i
+                                                >Print NTP
                                             </button>
                                             <div class="invalid-feedback">
                                                 <span
@@ -1282,6 +1329,7 @@ export default {
                 </div>
             </b-tab>
         </b-tabs>
+        <print-options ref="printOpt"></print-options>
     </Layout>
 </template>
 

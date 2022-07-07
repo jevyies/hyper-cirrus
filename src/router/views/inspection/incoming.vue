@@ -152,7 +152,6 @@ export default {
           });
         });
         this.poData = res.data;
-        console.log(res.data);
       })
       .catch((err) => {
         let stringErr = err.toString();
@@ -169,7 +168,6 @@ export default {
   },
   methods: {
     onCreate() {
-      console.log(this.form);
       this.submitted = true;
       this.$v.$touch();
       if (this.$v.$invalid || this.checkCreateForm() === 0) {
@@ -262,7 +260,6 @@ export default {
       }
     },
     onCancel() {
-      console.log(this.cancelForm);
       this.submitted = true;
       // this.$v.$touch();
       if (this.checkCancelForm() === 0) {
@@ -421,7 +418,6 @@ export default {
       this.$bvModal.show("modal-create");
     },
     cancelIar(props) {
-      console.log(props);
       this.onReset();
       this.perPageItem = 1;
       this.currentPageItem = 1;

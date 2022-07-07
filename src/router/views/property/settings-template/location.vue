@@ -1,32 +1,12 @@
 <script>
-import Layout from "../../layouts/main";
-import PageHeader from "@/components/page-header";
 import Swal from "sweetalert2";
 import { cloneDeep } from "lodash";
 import { required } from "vuelidate/lib/validators";
 
 export default {
-  page: {
-    title: "Property Location",
-  },
-  components: {
-    Layout,
-    PageHeader,
-  },
   data() {
     return {
-      title: "Property Location",
       submitted: false,
-      items: [
-        {
-          text: "Dashboards",
-          href: "/",
-        },
-        {
-          text: "Property Location",
-          active: true,
-        },
-      ],
       tableData: [],
       modalTitle: "",
       totalRows: 1,
@@ -131,17 +111,9 @@ export default {
             .then((res) => {
               this.tableData.splice(this.indexSelected, 1, res.data);
               this.$bvModal.hide("loc-modal");
-              //   this.alert = {
-              //     type: "success",
-              //     message: "Successfully updated!",
-              //   };
               this.showToast("Successfully updated!", "success");
             })
             .catch((err) => {
-              //   this.alertForm = {
-              //     type: "danger",
-              //     message: "Something went wrong!",
-              //   };
               this.showToast(
                 "Something went wrong! - updating location",
                 "error"
@@ -153,17 +125,9 @@ export default {
             .then((res) => {
               this.tableData.push(res.data);
               this.$bvModal.hide("loc-modal");
-              //   this.alert = {
-              //     type: "success",
-              //     message: "Successfully created!",
-              //   };
               this.showToast("Successfully created!", "success");
             })
             .catch((err) => {
-              //   this.alertForm = {
-              //     type: "danger",
-              //     message: "Something went wrong!",
-              //   };
               this.showToast(
                 "Something went wrong! - creating location",
                 "error"
@@ -204,28 +168,17 @@ export default {
               }
             })
             .catch((err) => {
-              //   this.alert = {
-              //     type: "danger",
-              //     message: "Cannot be deleted!",
-              //   };
               this.showToast("Cannot be deleted!", "error");
             });
         }
       });
     },
-    // dropData(data) {
-    //   this.$emit("dropData", data[0]);
-    //   this.$bvModal.hide("location-modal");
-    // },
-    // getData() {
-    // },
   },
 };
 </script>
 
 <template>
   <Layout>
-    <PageHeader :title="title" :items="items" />
     <div class="row">
       <div class="col-12">
         <div class="card border">

@@ -6,6 +6,7 @@ import { required } from "vuelidate/lib/validators";
 import Swal from "sweetalert2";
 import createNumberMask from "text-mask-addons/dist/createNumberMask";
 import MaskedInput from "vue-text-mask";
+import PrintOptions from "@/components/modals/print-options.vue";
 
 export default {
     page: {
@@ -15,6 +16,7 @@ export default {
         Layout,
         PageHeader,
         MaskedInput,
+        PrintOptions,
     },
     data() {
         return {
@@ -1347,6 +1349,13 @@ export default {
                     });
             }
         },
+        printPR(id){
+            this.$refs.printOpt.putOptions({
+                apiUrl: "procurement/Pr/Print",
+                routeVariables: [id],
+            });
+            this.$bvModal.show("print-options-modal");
+        }
     },
 };
 </script>
@@ -4655,6 +4664,7 @@ export default {
                                             <b-card-header
                                                 header-tag="header"
                                                 role="tab"
+                                                class="d-flex justify-content-between align-items-center"
                                             >
                                                 <h6 class="m-0">
                                                     <a
@@ -4668,6 +4678,24 @@ export default {
                                                         }}</a
                                                     >
                                                 </h6>
+                                                <button
+                                                    type="button"
+                                                    class="
+                                                        btn btn-purple
+                                                        btn-sm
+                                                    "
+                                                    @click="printPR(x.id)"
+                                                >
+                                                    <i
+                                                        class="
+                                                            bx
+                                                            bxs-printer
+                                                            me-1
+                                                        "
+                                                    ></i
+                                                    >Print Purchase
+                                                    Request
+                                                </button>
                                             </b-card-header>
                                             <b-collapse
                                                 :visible="x.visible"
@@ -5187,6 +5215,7 @@ export default {
                                             <b-card-header
                                                 header-tag="header"
                                                 role="tab"
+                                                class="d-flex align-items-center justify-content-between"
                                             >
                                                 <h6 class="m-0">
                                                     <a
@@ -5200,6 +5229,24 @@ export default {
                                                         }}</a
                                                     >
                                                 </h6>
+                                                <button
+                                                    type="button"
+                                                    class="
+                                                        btn btn-purple
+                                                        btn-sm
+                                                    "
+                                                    @click="printPR(x.id)"
+                                                >
+                                                    <i
+                                                        class="
+                                                            bx
+                                                            bxs-printer
+                                                            me-1
+                                                        "
+                                                    ></i
+                                                    >Print Purchase
+                                                    Request
+                                                </button>
                                             </b-card-header>
                                             <b-collapse
                                                 :visible="x.visible"
@@ -7781,5 +7828,6 @@ export default {
                 >
             </div>
         </div>
+        <print-options ref="printOpt"></print-options>
     </Layout>
 </template>
