@@ -168,7 +168,7 @@ export default {
               <div class="col-7">
                 <div class="text-primary p-4">
                   <h5 class="text-primary">Welcome Back !</h5>
-                  <p>Sign in to continue to</p>
+                  <p>Sign in to continue</p>
                 </div>
               </div>
               <div class="col-5 align-self-end">
@@ -180,9 +180,9 @@ export default {
             <div>
               <router-link tag="a" to="/">
                 <div class="avatar-md profile-user-wid mb-4">
-                  <!-- <span class="avatar-title"> -->
-                    <img src="@/assets/images/logo/cirrus-white.png" alt height="60" />
-                  <!-- </span> -->
+                  <span class="avatar-title rounded-circle bg-light">
+                    <img src="@/assets/images/logo/g-colored.png" alt height="60" />
+                  </span>
                 </div>
               </router-link>
             </div>

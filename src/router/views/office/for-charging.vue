@@ -32,17 +32,16 @@ export default {
             available: [],
             posted: [],
             pending: [],
-            cycle: null,
         };
     },
     methods: {
         changeCycle(cycle) {
-            this.cycle = cycle;
+            this.fetchList(cycle)
         },
-        async fetchList() {
+        async fetchList(cycle) {
             const available = await this.$store.dispatch(
                 "rfppayment/getAllAvailable",
-                this.cycle
+                cycle
             );
             available.data.forEach((item) => {
                 item.searchItem = `${item.objectOfExpenditure.fundSource.sourceName} ${item.objectOfExpenditure.account.accountGroup.groupName} ${item.objectOfExpenditure.account.accountGroup.fundClassification.classification}  ${item.objectOfExpenditure.account.accountName}`;
@@ -50,12 +49,12 @@ export default {
             this.available = available.data;
             const posted = await this.$store.dispatch(
                 "rfppayment/getAllPosted",
-                this.cycle
+                cycle
             );
             this.posted = posted.data;
             const pending = await this.$store.dispatch(
                 "rfppayment/getAllPending",
-                this.cycle
+                cycle
             );
             this.pending = pending.data;
         },
@@ -109,8 +108,7 @@ export default {
         },
     },
     async created() {
-        this.cycle = this.$store.state.data.cycle;
-        await this.fetchList();
+        await this.fetchList(this.$store.state.data.cycle);
     },
 };
 </script>
