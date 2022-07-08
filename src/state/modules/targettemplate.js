@@ -24,5 +24,7 @@ export const actions = {
     CreateTargetTemplate(context, data){
         return planningAPI.post(`TargetTemplate/Create`, data);
     },
-
+    SendTargetTemplate(context, data){
+        return planningAPI.post(`TargetTemplate/Send/${data.id}`, data);
+    },
 }

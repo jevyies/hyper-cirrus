@@ -441,7 +441,6 @@ export default {
                                 "error"
                             );
                         }
-                        console.log(res.data)
                         this.tableData.splice(this.indexSelected, 1, res.data);
                         this.showToast("Successfully updated!", "success");
                     })
@@ -529,7 +528,6 @@ export default {
         updateItem(row){
             this.indexSelected = this.tableData.indexOf(row);
             this.updateMode = true;
-            this.createNew = true;
             this.form = {
                 id: row.id,
                 indicatorItemId: row.indicatorItemId,
@@ -542,6 +540,10 @@ export default {
             }
             this.selectedIndicator = this.indicators.find(indicator => indicator.id == row.indicatorItem.indicatorId).indicatorName;
             this.selectedIndicatorItem = row.indicatorItem.indicatorItemName;
+        },
+        cancelOperation(){
+            this.createNew = false;
+            this.updateMode = false;
         }
     },
 };
@@ -563,14 +565,14 @@ export default {
                     <button
                         type="button"
                         class="btn btn-primary"
-                        v-if="!createNew"
+                        v-if="!createNew && !updateMode"
                         @click="createNewTemplate()"
                     >
                         <i class="bx bx-plus me-1"></i>Create New
                     </button>
                     <button
                         type="button"
-                        v-if="isSaveable"
+                        v-if="createNew && isSaveable"
                         class="btn btn-success"
                         @click="saveChanges"
                     >
@@ -578,7 +580,7 @@ export default {
                     </button>
                     <button
                         type="button"
-                        v-if="isUpdateable"
+                        v-if="updateMode && isUpdateable"
                         class="btn btn-success"
                         @click="saveChanges"
                     >
@@ -587,14 +589,14 @@ export default {
                     <button
                         type="button"
                         class="btn btn-link"
-                        v-if="createNew"
-                        @click="createNew = false"
+                        v-if="createNew || updateMode"
+                        @click="cancelOperation"
                     >
                         <i class="bx bx-x me-1"></i>Cancel
                     </button>
                 </div>
             </div>
-            <div class="row" v-if="createNew">
+            <div class="row" v-if="createNew || updateMode">
                 <div :class="{'col-md-6': updateMode, 'col-md-4': !updateMode}">
                     <div class="card">
                         <div class="card-header bg-purple text-center">
@@ -1111,7 +1113,7 @@ export default {
                     </div>
                 </div>
             </div>
-            <div class="mt-2 position-relative" v-if="!createNew">
+            <div class="mt-2 position-relative" v-if="!createNew && !updateMode">
                 <div class="d-flex">
                     <div
                         id="tickets-table_filter"
