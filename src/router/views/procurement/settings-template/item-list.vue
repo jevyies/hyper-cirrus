@@ -139,9 +139,11 @@ export default {
             }else{
                 this.form.subType = "";
             }
+            var data = cloneDeep(this.form);
+            data.unitCost = this.getExactAmt(this.form.unitCost);
             if (this.form.id > 0) {
                 this.$store
-                    .dispatch("item/UpdateItem", this.form)
+                    .dispatch("item/UpdateItem", data)
                     .then((res) => {
                         if (res.data.error) {
                             return this.showToast(res.data.errorMessage, "error");
@@ -163,7 +165,7 @@ export default {
                     });
             } else {
                 this.$store
-                    .dispatch("item/CreateItem", this.form)
+                    .dispatch("item/CreateItem", data)
                     .then((res) => {
                         if (res.data.error) {
                             return this.showToast(res.data.errorMessage, "error");

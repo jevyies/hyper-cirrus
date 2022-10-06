@@ -7,4 +7,7 @@ module.exports = {
       enableInSFC: false
     }
   },
+  devServer: {
+    port: 4040,
+  }
 }
